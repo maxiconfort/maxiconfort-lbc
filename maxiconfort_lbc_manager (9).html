@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maxiconfort — LBC Manager IDF</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+/* ===== THEMES ===== */
+[data-theme="dark"] {
+  --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#222; --surface3:#2a2a2a;
+  --border:#2e2e2e; --border2:#3a3a3a; --text:#f0ede8; --text2:#9a9690; --text3:#5e5c58;
+  --accent:#e8c547; --accent2:#c4a230; --shadow:0 2px 12px rgba(0,0,0,.5);
+}
+[data-theme="light"] {
+  --bg:#f5f4f0; --surface:#ffffff; --surface2:#f0efe9; --surface3:#e8e6de;
+  --border:#e0ddd4; --border2:#ccc9be; --text:#1a1916; --text2:#6b6860; --text3:#aaa89e;
+  --accent:#c89b10; --accent2:#a07c08; --shadow:0 2px 12px rgba(0,0,0,.08);
+}
+:root {
+  --green:#4caf82; --green-bg:#1a2e22; --green-lt:#e6f5ee;
+  --amber:#e89547; --red:#e85447; --red-bg:#2e0f0a; --red-lt:#fde8e6;
+  --blue:#4789e8; --blue-bg:#0a1a2e; --blue-lt:#e6f0fd;
+  --radius:6px; --radius-lg:10px;
+}
+[data-theme="light"] { --green-bg:#e6f5ee; --green-lt:#e6f5ee; --red-bg:#fde8e6; --blue-bg:#e6f0fd; }
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;min-height:100vh;transition:background .2s,color .2s}
+
+/* ===== LOGIN ===== */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:0}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 36px;width:360px;text-align:center;box-shadow:var(--shadow)}
+.login-logo{width:52px;height:52px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#0f0f0f;font-family:'DM Mono',monospace;margin:0 auto 20px}
+.login-title{font-size:20px;font-weight:600;margin-bottom:4px;letter-spacing:-.5px}
+.login-sub{font-size:12px;color:var(--text3);margin-bottom:28px;font-family:'DM Mono',monospace}
+.login-label{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;text-align:left;display:block;margin-bottom:5px;font-family:'DM Mono',monospace}
+.login-input{width:100%;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:18px;font-family:'DM Mono',monospace;outline:none;margin-bottom:14px;transition:border-color .15s;text-align:center;letter-spacing:6px}
+.login-input:focus{border-color:var(--accent)}
+.login-btn{width:100%;padding:13px;background:var(--accent);color:#0f0f0f;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s}
+.login-btn:hover{background:var(--accent2)}
+.login-err{font-size:12px;color:var(--red);margin-top:10px;display:none;font-family:'DM Mono',monospace}
+.role-hint{font-size:11px;color:var(--text3);margin-top:14px;font-family:'DM Mono',monospace}
+.role-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;font-family:'DM Mono',monospace}
+.role-admin{background:#2e1f0a;color:#e89547}
+.role-collab{background:var(--green-bg);color:var(--green)}
+.role-province{background:var(--blue-bg);color:var(--blue)}
+
+/* ===== HEADER ===== */
+.header{display:flex;align-items:center;gap:14px;padding:11px 20px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.logo-icon{width:30px;height:30px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0f0f0f;font-family:'DM Mono',monospace;flex-shrink:0}
+.logo-name{font-size:13px;font-weight:600;letter-spacing:-.3px}
+.logo-sub{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace}
+.header-actions{margin-left:auto;display:flex;gap:7px;align-items:center}
+
+/* THEME TOGGLE */
+.theme-toggle{width:40px;height:22px;background:var(--surface2);border:1px solid var(--border2);border-radius:11px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.theme-toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;top:2px;transition:left .2s,background .2s}
+[data-theme="dark"] .theme-toggle::after{left:2px;background:#5e5c58;box-shadow:none}
+[data-theme="light"] .theme-toggle::after{left:20px;background:var(--accent)}
+
+/* ===== STATS ===== */
+.stats-bar{display:grid;border-bottom:1px solid var(--border)}
+.stat-item{padding:12px 20px;border-right:1px solid var(--border)}
+.stat-item:last-child{border-right:none}
+.stat-label{font-size:9px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;font-family:'DM Mono',monospace}
+.stat-value{font-size:22px;font-weight:600;letter-spacing:-1px;line-height:1}
+.sv-green{color:var(--green)}.sv-amber{color:var(--amber)}.sv-accent{color:var(--accent)}.sv-blue{color:var(--blue)}
+.prog-wrap{height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
+
+/* ===== TABS ===== */
+.tabs{display:flex;border-bottom:1px solid var(--border);padding:0 20px;background:var(--surface);overflow-x:auto}
+.tab-btn{padding:10px 16px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;font-family:'DM Sans',sans-serif;transition:all .15s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tab-btn svg{width:13px;height:13px}
+.tab-btn:hover{color:var(--text2)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.panel{display:none}.panel.active{display:block}
+
+/* ===== CONTROLS ===== */
+.controls{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--surface)}
+.search-wrap{position:relative;flex:1;min-width:150px;max-width:220px}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text3);pointer-events:none}
+.search-input{width:100%;padding:6px 9px 6px 30px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
+.search-input::placeholder{color:var(--text3)}
+.search-input:focus{border-color:var(--accent)}
+select,input[type="text"],input[type="number"]{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;padding:6px 9px;outline:none;cursor:pointer}
+select:focus,input:focus{border-color:var(--accent)}
+select option{background:var(--surface2)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius);font-size:12px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);transition:all .15s;white-space:nowrap}
+.btn svg{width:13px;height:13px;flex-shrink:0}
+.btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surface3)}
+.btn.primary{background:var(--accent);color:#0f0f0f;border-color:var(--accent);font-weight:600}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2);color:#0f0f0f}
+.btn.success{background:var(--green-bg);color:var(--green);border-color:#2a4a38}
+[data-theme="light"] .btn.success{background:#e6f5ee;border-color:#97c459;color:#27500a}
+.btn.success:hover{border-color:var(--green)}
+.btn.danger{background:var(--red-bg);color:var(--red);border-color:#4a2020}
+[data-theme="light"] .btn.danger{background:#fde8e6;border-color:#f09595;color:#791f1f}
+.btn.danger:hover{border-color:var(--red)}
+.btn.ghost{background:none;border-color:transparent}
+.btn.ghost:hover{background:var(--surface2);border-color:var(--border)}
+.bulk-bar{display:flex;gap:7px;align-items:center;padding:7px 20px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.bulk-label{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+
+/* ===== TABLE ===== */
+.table-wrap{overflow-x:auto;max-height:calc(100vh - 300px);overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+thead{position:sticky;top:0;z-index:5}
+th{text-align:left;font-size:9px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;padding:9px 10px;background:var(--surface);border-bottom:1px solid var(--border);white-space:nowrap;font-family:'DM Mono',monospace}
+td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:var(--surface2)}
+.badge{display:inline-block;font-size:9px;font-weight:500;padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;white-space:nowrap;letter-spacing:.3px}
+.b-on{background:var(--green-bg);color:var(--green)}
+[data-theme="light"] .b-on{background:#e6f5ee;color:#27500a}
+.b-off{background:var(--surface3);color:var(--text3)}
+.b-th{background:#2e1a0a;color:#e89547}
+[data-theme="light"] .b-th{background:#fff0e0;color:#994400}
+.b-h{background:#1a2020;color:#47c8e8}
+[data-theme="light"] .b-h{background:#e0f4f8;color:#0a6070}
+.b-m{background:#1a1a2e;color:#8080e8}
+[data-theme="light"] .b-m{background:#eeeefd;color:#3030a0}
+.b-new{background:var(--blue-bg);color:var(--blue)}
+[data-theme="light"] .b-new{background:#e6f0fd;color:#0c447c}
+.b-bloque{background:var(--red-bg);color:var(--red)}
+[data-theme="light"] .b-bloque{background:#fde8e6;color:#791f1f}
+.toggle{width:30px;height:16px;border-radius:8px;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--green)}.toggle.off{background:var(--surface3)}
+[data-theme="light"] .toggle.off{background:#ccc9be}
+.toggle::after{content:'';position:absolute;width:10px;height:10px;background:#fff;border-radius:50%;top:3px;transition:left .2s}
+.toggle.on::after{left:17px}.toggle.off::after{left:3px}
+[data-theme="light"] .toggle.off::after{background:#f0efe9}
+.cell-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:10px;font-family:'DM Mono',monospace;padding:3px 6px;width:100%;outline:none}
+.cell-input:focus{border-color:var(--accent)}
+.cell-input::placeholder{color:var(--text3)}
+.prix-input{color:var(--accent)!important;font-weight:600!important;background:transparent!important;border-color:transparent!important;padding:2px 4px!important}
+.prix-input:hover{border-color:var(--border)!important}
+.prix-input:focus{border-color:var(--accent)!important;background:var(--surface2)!important}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:4px;border:1px solid transparent;background:none;cursor:pointer;color:var(--text3);transition:all .15s}
+.icon-btn:hover{background:var(--red-bg);color:var(--red);border-color:#4a2020}
+[data-theme="light"] .icon-btn:hover{background:#fde8e6;border-color:#f09595;color:#791f1f}
+.icon-btn svg{width:12px;height:12px}
+.titre-main{max-width:185px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.titre-sub{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px}
+.empty-state{text-align:center;padding:50px;color:var(--text3)}
+.empty-state svg{width:32px;height:32px;margin-bottom:8px;opacity:.4}
+
+/* ===== GENERATEUR ===== */
+.gen-panel{padding:20px}
+.gen-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:14px;box-shadow:var(--shadow)}
+.gen-title{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;letter-spacing:-.3px}
+.gen-title svg{width:16px;height:16px;color:var(--accent)}
+.gen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.gen-group{display:flex;flex-direction:column;gap:4px}
+.gen-label{font-size:9px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-family:'DM Mono',monospace}
+.gen-input{padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;width:100%}
+.gen-input:focus{border-color:var(--accent)}
+.info-box{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:14px}
+.info-box strong{color:var(--accent)}
+.radar-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.dept-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px}
+.dept-name{font-size:11px;font-weight:500;font-family:'DM Mono',monospace;margin-bottom:4px}
+.dept-prog{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.dept-fill{height:100%;border-radius:2px;transition:width .4s}
+.dept-count{font-size:10px;color:var(--text3);margin-top:3px;font-family:'DM Mono',monospace}
+.anti-blacklist-score{display:flex;align-items:center;gap:8px;background:var(--green-bg);border:1px solid #2a4a38;border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--green)}
+[data-theme="light"] .anti-blacklist-score{background:#e6f5ee;border-color:#97c459;color:#27500a}
+.score-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.preview-bar{display:flex;gap:4px;flex-wrap:wrap;margin-top:10px}
+.prev-chip{font-size:10px;padding:2px 7px;border-radius:3px;font-family:'DM Mono',monospace;background:var(--surface3);color:var(--text2);border:1px solid var(--border)}
+.prev-chip.ok{background:var(--green-bg);color:var(--green);border-color:#2a4a38}
+[data-theme="light"] .prev-chip.ok{background:#e6f5ee;color:#27500a;border-color:#97c459}
+
+/* ===== FORM ===== */
+.form-section{padding:20px;max-width:900px}
+.form-section-title{font-size:13px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.form-section-title svg{width:15px;height:15px;color:var(--accent)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:9px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-family:'DM Mono',monospace}
+.form-input{padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--text3)}
+.form-input.full{width:100%}
+.flash-ok{background:var(--green-bg);color:var(--green);border:1px solid #2a4a38;border-radius:var(--radius);padding:9px 12px;font-size:12px;margin-bottom:14px;display:none;font-family:'DM Mono',monospace}
+[data-theme="light"] .flash-ok{background:#e6f5ee;border-color:#97c459;color:#27500a}
+
+/* ===== CATALOGUE ===== */
+.prod-panel{padding:0}
+.prod-section-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border)}
+.prod-category{padding:14px 20px 6px}
+.prod-cat-label{font-size:9px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-family:'DM Mono',monospace;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:7px}
+.prod-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px 12px;display:flex;flex-direction:column;gap:5px;transition:border-color .15s}
+.prod-card:hover{border-color:var(--border2)}
+.prod-card-name{font-size:12px;font-weight:500}
+.prod-card-meta{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace}
+.prod-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:3px;gap:5px;flex-wrap:wrap}
+.prod-card-price{font-size:13px;font-weight:600;color:var(--accent);font-family:'DM Mono',monospace}
+.prod-card-marge{font-size:10px;color:var(--green);font-family:'DM Mono',monospace}
+.mini-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin:0 20px 20px}
+.mini-form-title{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-family:'DM Mono',monospace;margin-bottom:10px}
+.mini-form-row{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end}
+
+/* ===== RENTA ===== */
+.renta-wrap{padding:0 20px 20px;overflow-x:auto}
+.renta-title{font-size:13px;font-weight:600;margin:18px 0 10px;display:flex;align-items:center;gap:8px}
+.renta-title svg{width:15px;height:15px;color:var(--accent)}
+.renta-table{width:100%;border-collapse:collapse;font-size:12px}
+.renta-table th{background:var(--surface3);color:var(--text3);font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;padding:8px 10px;border:1px solid var(--border);font-family:'DM Mono',monospace;white-space:nowrap;text-align:right}
+.renta-table th:first-child,.renta-table th:nth-child(2){text-align:left}
+.renta-table td{padding:8px 10px;border:1px solid var(--border);text-align:right;font-family:'DM Mono',monospace;font-size:12px}
+.renta-table td:first-child,.renta-table td:nth-child(2){text-align:left;font-family:'DM Sans',sans-serif}
+.renta-table tr:hover td{background:var(--surface2)}
+.pv-cell{color:var(--accent);font-weight:600}
+.marge-cell{color:var(--green)}
+.coef-cell{color:var(--blue)}
+.pr-cell{color:var(--text2)}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">MC</div>
+    <div class="login-title">Maxiconfort LBC</div>
+    <div class="login-sub">Gestionnaire publications IDF</div>
+    <label class="login-label">Code d'accès</label>
+    <input class="login-input" id="pin-input" type="password" maxlength="4" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="off">
+    <button class="login-btn" onclick="doLogin()">Accéder →</button>
+    <div class="login-err" id="login-err">❌ Code incorrect. Réessaie.</div>
+    <div class="role-hint">Contactez votre administrateur pour obtenir votre code.</div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app" style="display:none">
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="logo-icon">MC</div>
+    <div>
+      <div class="logo-name">Maxiconfort LBC</div>
+      <div class="logo-sub">IDF — 100 annonces/jour</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span class="role-badge" id="role-badge"></span>
+    <span id="sync-status" style="font-size:10px;font-family:'DM Mono',monospace;color:var(--green);min-width:160px;text-align:right"></span>
+    <button class="btn ghost" onclick="manualSync()" title="Synchroniser maintenant">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+    </button>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Changer le thème"></button>
+    <button class="btn" onclick="exportCSV()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV
+    </button>
+    <button class="btn primary" id="save-btn" onclick="saveAll()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Sauvegarder
+    </button>
+    <button class="btn ghost" onclick="doLogout()" title="Déconnexion">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-item"><div class="stat-label">Annonces total</div><div class="stat-value" id="s-total">—</div></div>
+  <div class="stat-item"><div class="stat-label">Validées ON</div><div class="stat-value sv-green" id="s-on">—</div></div>
+  <div class="stat-item"><div class="stat-label">Restantes</div><div class="stat-value sv-amber" id="s-off">—</div></div>
+  <div class="stat-item">
+    <div class="stat-label">Avancement</div>
+    <div class="stat-value sv-accent" id="s-pct">—</div>
+    <div class="prog-wrap"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('planning')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Planning
+  </button>
+  <button class="tab-btn" onclick="switchTab('generateur')" id="tab-gen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 19.07a10 10 0 010-14.14"/><path d="M22.83 12a10.83 10.83 0 01-10.83 10.83A10.83 10.83 0 011.17 12 10.83 10.83 0 0112 1.17 10.83 10.83 0 0122.83 12z" stroke-width="1"/></svg>Générateur IDF
+  </button>
+  <button class="tab-btn" onclick="switchTab('produits')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Catalogue
+  </button>
+  <button class="tab-btn" onclick="switchTab('ajouter')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>+ Annonce
+  </button>
+  <button class="tab-btn" id="tab-renta" style="display:none" onclick="switchTab('rentabilite')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Rentabilité
+    <span style="font-size:9px;background:#2e1f0a;color:#e89547;padding:1px 5px;border-radius:3px">ADMIN</span>
+  </button>
+</div>
+
+<!-- ===== PLANNING ===== -->
+<div id="panel-planning" class="panel active">
+  <div class="controls">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" id="srch" type="text" placeholder="Ville, produit, ID..." oninput="renderTable()">
+    </div>
+    <select id="f-jour" onchange="renderTable()"><option value="">Tous les jours</option></select>
+    <select id="f-statut" onchange="renderTable()">
+      <option value="">Tous statuts</option>
+      <option value="ON">Validées ON</option>
+      <option value="OFF">À valider</option>
+      <option value="Bloqué">Bloquées</option>
+    </select>
+    <select id="f-dept" onchange="renderTable()">
+      <option value="">Tous depts</option>
+      <option value="75">75 — Paris</option>
+      <option value="92">92 — Hauts-de-Seine</option>
+      <option value="93">93 — Seine-St-Denis</option>
+      <option value="94">94 — Val-de-Marne</option>
+      <option value="95">95 — Val-d'Oise</option>
+      <option value="78">78 — Yvelines</option>
+      <option value="91">91 — Essonne</option>
+      <option value="77">77 — Seine-et-Marne</option>
+    </select>
+    <select id="f-pri" onchange="renderTable()">
+      <option value="">Toutes priorités</option>
+      <option value="Très haute">Très haute</option>
+      <option value="Haute">Haute</option>
+      <option value="Moyenne">Moyenne</option>
+    </select>
+    <button class="btn ghost" onclick="resetFilters()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+    </button>
+  </div>
+  <div class="bulk-bar">
+    <span class="bulk-label" id="bulk-count">—</span>
+    <div style="margin-left:auto;display:flex;gap:7px">
+      <button class="btn success" onclick="bulkValidate(true)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Tout ON
+      </button>
+      <button class="btn" onclick="bulkValidate(false)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Tout OFF
+      </button>
+      <button class="btn danger" onclick="bulkBloque()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Bloquer
+      </button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table><thead id="planning-thead"></thead><tbody id="tbl-body"></tbody></table>
+    <div id="empty-state" class="empty-state" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <div>Aucune annonce trouvée.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GENERATEUR ===== -->
+<div id="panel-generateur" class="panel">
+  <div class="gen-panel">
+    <div class="anti-blacklist-score">
+      <div class="score-dot"></div>
+      <div>
+        <strong>Anti-blacklist activé</strong> — Rotation ville + produit, espacement 8-10 min, max 2 annonces/ville/jour, alternance dept IDF, titres variés automatiquement.
+      </div>
+    </div>
+
+    <div class="gen-card" style="margin-top:14px">
+      <div class="gen-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Générateur de planning — Toile d'araignée IDF
+      </div>
+      <div class="info-box" id="gen-infobox">
+        Génère <strong>100 annonces/jour</strong> en couvrant tous les départements IDF. Chaque annonce est espacée de <strong>~8 min</strong>, les villes et produits alternent pour éviter la détection. Jamais 2× le même produit dans la même ville le même jour.
+      </div>
+      <div class="gen-grid">
+        <div class="gen-group">
+          <label class="gen-label">Nombre d'annonces/jour</label>
+          <input class="gen-input" type="number" id="g-nb" value="100" min="20" max="150">
+        </div>
+        <div class="gen-group">
+          <label class="gen-label">Heure de début</label>
+          <input class="gen-input" type="time" id="g-start" value="08:00">
+        </div>
+        <div class="gen-group">
+          <label class="gen-label">Heure de fin</label>
+          <input class="gen-input" type="time" id="g-end" value="21:00">
+        </div>
+        <div class="gen-group">
+          <label class="gen-label">Numéro de jour</label>
+          <input class="gen-input" type="number" id="g-day" value="1" min="1" max="99">
+        </div>
+        <div class="gen-group" id="gen-pri-wrap">
+          <label class="gen-label">Priorité produits phares</label>
+          <select class="gen-input" id="g-pri-mode">
+            <option value="mix">Mix équilibré</option>
+            <option value="ens">Ensembles prioritaires</option>
+            <option value="lits">Lits Nico prioritaires</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div class="gen-label" style="margin-bottom:8px">Couverture dept IDF (toile d'araignée)</div>
+        <div class="radar-wrap" id="radar-wrap"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" onclick="generatePlanning()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Générer le planning
+        </button>
+        <button class="btn" onclick="previewGeneration()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Aperçu
+        </button>
+      </div>
+      <div id="preview-result" style="margin-top:12px;display:none">
+        <div class="gen-label" style="margin-bottom:6px">Aperçu — premières annonces générées :</div>
+        <div class="preview-bar" id="preview-chips"></div>
+      </div>
+    </div>
+
+    <div class="gen-card">
+      <div class="gen-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Règles anti-blacklist appliquées
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--green);font-size:14px;line-height:1">✓</span><div><strong>Espacement 8-10 min</strong><br><span style="color:var(--text3)">Jamais 2 annonces simultanées</span></div></div>
+          <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--green);font-size:14px;line-height:1">✓</span><div><strong>Max 2 par ville/jour</strong><br><span style="color:var(--text3)">Rotation sur toute l'IDF</span></div></div>
+          <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--green);font-size:14px;line-height:1">✓</span><div><strong>Produit ≠ par ville</strong><br><span style="color:var(--text3)">Jamais le même prod + même ville</span></div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--green);font-size:14px;line-height:1">✓</span><div><strong>Titres variés (6 modèles)</strong><br><span style="color:var(--text3)">Anti-doublon de texte</span></div></div>
+          <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--green);font-size:14px;line-height:1">✓</span><div><strong>Photos alternées A→H</strong><br><span style="color:var(--text3)">8 variantes cycliques</span></div></div>
+          <div style="display:flex;align-items:flex-start;gap:8px"><span style="color:var(--green);font-size:14px;line-height:1">✓</span><div><strong>Couverture 8 depts</strong><br><span style="color:var(--text3)">75/92/93/94/95/78/91/77</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CATALOGUE ===== -->
+<div id="panel-produits" class="panel prod-panel">
+  <div class="prod-section-header">
+    <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace" id="prod-count-lbl">—</span>
+    <div style="display:flex;gap:8px">
+      <button class="btn primary" id="btn-add-product" onclick="toggleAddProductForm()" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        + Produit
+      </button>
+      <button class="btn" onclick="switchTab('ajouter')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>+ Annonce
+      </button>
+    </div>
+  </div>
+  <div id="prod-list"></div>
+
+  <!-- FORM AJOUT PRODUIT — visible admin uniquement -->
+  <div id="add-product-form" style="display:none">
+    <div style="padding:0 20px 20px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:var(--radius-lg);padding:20px 22px;box-shadow:var(--shadow)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+            Ajouter un produit au catalogue
+          </div>
+          <button class="btn ghost" onclick="toggleAddProductForm()" title="Fermer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div id="np-flash" style="display:none;background:var(--green-bg);color:var(--green);border:1px solid #2a4a38;border-radius:var(--radius);padding:8px 12px;font-size:12px;margin-bottom:14px;font-family:'DM Mono',monospace"></div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:14px">
+          <div class="form-group">
+            <label class="form-label">Nom du produit *</label>
+            <input class="form-input" id="np-nom" type="text" placeholder="ex: Lit Nico - Beige" style="width:100%">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dimension *</label>
+            <input class="form-input" id="np-dim" type="text" placeholder="ex: 140x190" style="width:100%">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prix de vente TTC € *</label>
+            <input class="form-input" id="np-prix" type="number" placeholder="ex: 299" min="1" style="width:100%">
+          </div>
+          <div class="form-group" id="np-marge-grp">
+            <label class="form-label">Marge % (admin)</label>
+            <input class="form-input" id="np-marge" type="number" placeholder="ex: 32.5" min="0" max="100" step="0.1" style="width:100%">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Réf. produit</label>
+            <input class="form-input" id="np-ref" type="text" placeholder="ex: MPP20160200" style="width:100%">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Catégorie *</label>
+            <select class="form-input" id="np-cat" style="width:100%">
+              <option>Ensemble matelas + sommier</option>
+              <option>Lit coffre premium</option>
+              <option>Matelas mémoire de forme seul</option>
+              <option>Sommier tapissier seul</option>
+              <option>Lit Nico</option>
+              <option>Lit superposé</option>
+              <option>Canapé</option>
+              <option>Autre</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Priorité pub. LBC</label>
+            <select class="form-input" id="np-priorite" style="width:100%">
+              <option value="Très haute">Très haute</option>
+              <option value="Haute" selected>Haute</option>
+              <option value="Moyenne">Moyenne</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Inclure dans générateur</label>
+            <select class="form-input" id="np-gen" style="width:100%">
+              <option value="1">Oui — inclure dans les plannings</option>
+              <option value="0">Non — catalogue uniquement</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn primary" onclick="addProduct()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Ajouter au catalogue
+          </button>
+          <button class="btn" onclick="clearProductForm()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+            Vider
+          </button>
+          <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">* champs obligatoires</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AJOUTER ===== -->
+<div id="panel-ajouter" class="panel">
+  <div class="form-section">
+    <div class="form-section-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Nouvelle annonce manuelle
+    </div>
+    <div id="form-flash" class="flash-ok"></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Ville *</label><input class="form-input" id="f-ville" type="text" placeholder="ex: Vincennes"></div>
+      <div class="form-group"><label class="form-label">Département</label><input class="form-input" id="f-dept-form" type="text" placeholder="ex: 94"></div>
+      <div class="form-group"><label class="form-label">Heure</label>
+        <select class="form-input" id="f-heure-form">
+          <option>08:00</option><option>08:30</option><option>09:00</option><option>09:30</option>
+          <option>10:00</option><option>10:30</option><option>11:00</option><option>11:30</option>
+          <option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option>
+          <option selected>15:30</option><option>16:00</option><option>17:00</option><option>18:00</option>
+          <option>19:00</option><option>20:00</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Produit (catalogue)</label>
+        <select class="form-input" id="f-produit" onchange="autofillFromProduct()"><option value="">— Choisir —</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Ou produit libre</label><input class="form-input" id="f-produit-libre" type="text" placeholder="ex: Canapé d'angle"></div>
+      <div class="form-group"><label class="form-label">Dimension</label><input class="form-input" id="f-dim" type="text" placeholder="ex: 160x200"></div>
+      <div class="form-group"><label class="form-label">Prix TTC (€) *</label><input class="form-input" id="f-prix" type="number" placeholder="ex: 229"></div>
+      <div class="form-group"><label class="form-label">Priorité</label>
+        <select class="form-input" id="f-priorite-form">
+          <option value="Très haute">Très haute</option>
+          <option value="Haute" selected>Haute</option>
+          <option value="Moyenne">Moyenne</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Variante photo</label>
+        <select class="form-input" id="f-photo">
+          <option>Photo A</option><option>Photo B</option><option>Photo C</option><option>Photo D</option>
+          <option>Photo E</option><option>Photo F</option><option>Photo G</option><option>Photo H</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Variante texte</label>
+        <select class="form-input" id="f-texte">
+          <option>Texte A</option><option>Texte B</option><option>Texte C</option>
+          <option>Texte D</option><option>Texte E</option><option>Texte F</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Titre annonce</label>
+      <div style="display:flex;gap:7px;align-items:center">
+        <input class="form-input full" id="f-titre" type="text" placeholder="Généré automatiquement...">
+        <button class="btn" onclick="generateTitle()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Auto
+        </button>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:18px">
+      <label class="form-label">Commentaire</label>
+      <input class="form-input full" id="f-comment-form" type="text" placeholder="ex: Insister sur stock limité...">
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn primary" onclick="addAnnonce()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Ajouter au planning
+      </button>
+      <button class="btn" onclick="clearForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>Réinitialiser
+      </button>
+      <button class="btn" onclick="switchTab('planning')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>Voir le planning
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RENTABILITE ===== -->
+<div id="panel-rentabilite" class="panel">
+  <div class="renta-wrap">
+    <div class="renta-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Rentabilité — Ensembles Matelas + Sommier SF952B
+    </div>
+    <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:14px">Source : tableau officiel Maxiconfort — données confidentielles ADMIN</div>
+    <table class="renta-table">
+      <thead><tr>
+        <th style="text-align:left">Ensemble</th>
+        <th style="text-align:left">Réf.</th>
+        <th>Sommier</th>
+        <th>PR Mat.</th><th>PR Som.</th><th>PR Total</th>
+        <th>PV TTC</th><th>PV HT</th><th>Livraison</th>
+        <th>Marge €</th><th>Marge %</th><th>Coef</th>
+      </tr></thead>
+      <tbody id="renta-body"></tbody>
+    </table>
+    <div style="margin-top:12px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">
+      PV HT = PV TTC / 1.20 &nbsp;|&nbsp; Marge = PV HT − PR Total − Livraison &nbsp;|&nbsp; Coef = PV TTC / PR Total
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,15,15,.75);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+  <div style="width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite"></div>
+  <div style="font-size:13px;color:var(--text2);font-family:'DM Mono',monospace">Synchronisation Supabase...</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<script>
+// ============================================================
+// CONFIG ACCÈS
+// ============================================================
+const PINS = { '1234': 'admin', '5678': 'collab', '9012': 'province' };
+let currentRole = null;
+
+function doLogin() {
+  const pin = document.getElementById('pin-input').value;
+  const role = PINS[pin];
+  if (!role) { document.getElementById('login-err').style.display='block'; document.getElementById('pin-input').value=''; return; }
+  currentRole = role;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  applyRole(); init();
+}
+function doLogout() {
+  currentRole=null;
+  document.getElementById('pin-input').value='';
+  document.getElementById('login-err').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+function applyRole() {
+  const isAdmin    = currentRole==='admin';
+  const isProvince = currentRole==='province';
+  const b = document.getElementById('role-badge');
+  b.className = 'role-badge '+(isAdmin?'role-admin':isProvince?'role-province':'role-collab');
+  b.textContent = isAdmin ? '⚙ Borhen — Admin' : isProvince ? '🚚 Collaborateur Province' : '✓ Collaboratrice IDF';
+
+  // Onglets
+  document.getElementById('tab-renta').style.display = isAdmin ? 'flex' : 'none';
+  const tabGen = document.getElementById('tab-gen');
+  if(tabGen) tabGen.innerHTML = (isProvince
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4"/></svg> Générateur Province'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4"/></svg> Générateur IDF');
+
+  // Infobox générateur
+  const infobox = document.getElementById('gen-infobox');
+  if(infobox) infobox.innerHTML = isProvince
+    ? 'Génère <strong>100 annonces/jour</strong> sur les grandes villes de <strong>France Province</strong> (hors IDF). Priorité aux métropoles à fort potentiel literie. Produits : Ensembles 180×200, 90×190, Lits Nico, Lits Coffre. <strong>+20€ transport</strong> intégré dans les prix.'
+    : 'Génère <strong>100 annonces/jour</strong> en couvrant tous les départements IDF. Chaque annonce est espacée de <strong>~8 min</strong>. Jamais 2× le même produit dans la même ville le même jour.';
+
+  // Cacher mode priorité pour province
+  const priWrap = document.getElementById('gen-pri-wrap');
+  if(priWrap) priWrap.style.display = isProvince ? 'none' : 'flex';
+
+  // Catalogue — admin seulement
+  const npMarge = document.getElementById('np-marge-grp');
+  if(npMarge) npMarge.style.display = isAdmin ? 'flex' : 'none';
+  const btnAdd = document.getElementById('btn-add-product');
+  if(btnAdd) btnAdd.style.display = isAdmin ? 'flex' : 'none';
+  if(!isAdmin){ const f=document.getElementById('add-product-form'); if(f) f.style.display='none'; }
+
+  // Filtre dept : adapter pour Province
+  const fDept = document.getElementById('f-dept');
+  if(fDept && isProvince){
+    fDept.innerHTML = '<option value="">Toutes zones</option>'
+      + Object.keys(VILLES_PROVINCE).map(z=>`<option value="${z}">${z}</option>`).join('');
+  } else if(fDept && !isProvince) {
+    fDept.innerHTML = '<option value="">Tous depts</option><option value="75">75 — Paris</option><option value="92">92 — Hauts-de-Seine</option><option value="93">93 — Seine-St-Denis</option><option value="94">94 — Val-de-Marne</option><option value="95">95 — Val-d\'Oise</option><option value="78">78 — Yvelines</option><option value="91">91 — Essonne</option><option value="77">77 — Seine-et-Marne</option>';
+  }
+
+  document.getElementById('stats-bar').style.gridTemplateColumns = 'repeat(4,1fr)';
+}
+
+function toggleAddProductForm() {
+  const form = document.getElementById('add-product-form');
+  const btn  = document.getElementById('btn-add-product');
+  const open = form.style.display === 'block';
+  form.style.display = open ? 'none' : 'block';
+  if(!open){
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Fermer`;
+    btn.className = 'btn danger';
+    // scroll to form
+    setTimeout(()=>form.scrollIntoView({behavior:'smooth',block:'start'}),50);
+  } else {
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> + Produit`;
+    btn.className = 'btn primary';
+  }
+}
+
+function deleteProduct(id){
+  if(!confirm('Supprimer ce produit du catalogue ?')) return;
+  products=products.filter(p=>p.id!==id);
+  saveToLocalStorage();
+  deleteProductFromSupabase(id).then(()=>showSyncStatus('✓ Produit supprimé — '+new Date().toLocaleTimeString('fr-FR'))).catch(()=>{});
+  buildProductSelect();
+  renderProducts();
+}
+
+function clearProductForm(){
+  ['np-nom','np-dim','np-prix','np-marge','np-ref'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.value='';
+  });
+  const cat=document.getElementById('np-cat'); if(cat) cat.selectedIndex=0;
+  const pri=document.getElementById('np-priorite'); if(pri) pri.selectedIndex=1;
+  const gen=document.getElementById('np-gen'); if(gen) gen.selectedIndex=0;
+}
+
+// ============================================================
+// THEME
+// ============================================================
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme', isDark?'light':'dark');
+  try{ localStorage.setItem('lbc_theme', isDark?'light':'dark'); }catch(e){}
+}
+function loadTheme() {
+  try{ const t=localStorage.getItem('lbc_theme'); if(t) document.documentElement.setAttribute('data-theme',t); }catch(e){}
+}
+loadTheme();
+
+// ============================================================
+// DONNÉES FIXES
+// ============================================================
+const RENTA_DATA = [
+  {ens:"Ens. 90×190 - 15cm",  ref:"MPP1590190",  som:"SF952B-90190",  prMat:33.53, prSom:29.94, pvTTC:159, livraison:35.00, margePct:25.7, coef:2.09},
+  {ens:"Ens. 90×190 - 20cm",  ref:"MPP2090190",  som:"SF952B-90190",  prMat:40.64, prSom:29.94, pvTTC:179, livraison:35.00, margePct:29.2, coef:2.11},
+  {ens:"Ens. 90×200 - 15cm",  ref:"MPP1590200",  som:"SF952B-90200",  prMat:34.74, prSom:31.12, pvTTC:169, livraison:35.00, margePct:28.4, coef:2.14},
+  {ens:"Ens. 90×200 - 20cm",  ref:"MPP2090200",  som:"SF952B-90200",  prMat:41.74, prSom:31.12, pvTTC:179, livraison:35.00, margePct:27.7, coef:2.05},
+  {ens:"Ens. 120×190",        ref:"MPP20120190", som:"SF952B-120190", prMat:52.75, prSom:34.22, pvTTC:229, livraison:35.00, margePct:36.1, coef:2.19},
+  {ens:"Ens. 140×190 - 15cm", ref:"MPP15140190", som:"SF952B-140190", prMat:49.86, prSom:36.83, pvTTC:209, livraison:35.00, margePct:30.1, coef:2.01},
+  {ens:"Ens. 140×190 - 20cm", ref:"MPP20140190", som:"SF952B-140190", prMat:60.91, prSom:36.83, pvTTC:229, livraison:35.00, margePct:30.4, coef:1.95},
+  {ens:"Ens. 140×200",        ref:"MPP20140200", som:"SF952B-140200", prMat:62.54, prSom:38.07, pvTTC:249, livraison:35.00, margePct:34.6, coef:2.06},
+  {ens:"Ens. 160×200",        ref:"MPP20160200", som:"SF952B-160200", prMat:70.85, prSom:41.55, pvTTC:259, livraison:35.00, margePct:31.7, coef:1.92},
+  {ens:"Ens. 180×200",        ref:"MPP20180200", som:"SF952B-180200", prMat:79.15, prSom:50.70, pvTTC:319, livraison:35.00, margePct:38.0, coef:2.05},
+];
+
+// VILLES IDF PAR DEPT — couverture toile d'araignée
+// VILLES FRANCE PROVINCE — fort potentiel literie
+const VILLES_PROVINCE = {
+  'Lyon':['Lyon 1er','Lyon 2e','Lyon 3e','Lyon 4e','Lyon 5e','Lyon 6e','Lyon 7e','Lyon 8e','Lyon 9e','Villeurbanne','Venissieux','Bron','Caluire-et-Cuire','Saint-Priest'],
+  'Marseille':['Marseille 1er','Marseille 2e','Marseille 3e','Marseille 4e','Marseille 5e','Marseille 6e','Marseille 7e','Marseille 8e','Marseille 9e','Marseille 10e','Marseille 11e','Marseille 12e','Marseille 13e','Marseille 14e','Marseille 15e','Marseille 16e'],
+  'Toulouse':['Toulouse','Blagnac','Colomiers','Tournefeuille','Balma','Cugnaux','Muret','Ramonville','Plaisance-du-Touch','Portet-sur-Garonne'],
+  'Bordeaux':['Bordeaux','Merignac','Pessac','Talence','Begles','Gradignan','Villenave-Ornon','Bruges','Le Bouscat','Eysines'],
+  'Nantes':['Nantes','Saint-Herblain','Reze','Saint-Sebastien','Orvault','Bouguenais','Vertou','Carquefou','Sainte-Luce-sur-Loire'],
+  'Nice':['Nice','Antibes','Cannes','Grasse','Cagnes-sur-Mer','Menton','Mougins','Vallauris','Vence','Saint-Laurent-du-Var'],
+  'Montpellier':['Montpellier','Lattes','Perols','Palavas-les-Flots','Castelnau-le-Lez','Lunel','Sete','Beziers','Mauguio'],
+  'Strasbourg':['Strasbourg','Schiltigheim','Illkirch-Graffenstaden','Hoenheim','Lingolsheim','Obernai','Haguenau','Colmar','Mulhouse'],
+  'Lille':['Lille','Roubaix','Tourcoing','Villeneuve-Ascq','Wattrelos','Hem','Croix','Marcq-en-Baroeul','Lambersart','Loos'],
+  'Rennes':['Rennes','Saint-Jacques-Lande','Cesson-Sevigne','Bruz','Pace','Saint-Gregoire','Chantepie'],
+  'Grenoble':['Grenoble','Echirolles','Saint-Martin-Heres','Meylan','Fontaine','Seyssinet-Pariset','Voiron'],
+  'Toulon':['Toulon','La Seyne-sur-Mer','Hyeres','Six-Fours-les-Plages','La Garde','Le Pradet'],
+  'Nimes':['Nimes','Ales','Bagnols-sur-Ceze','Pont-Saint-Esprit','Beaucaire'],
+  'Avignon':['Avignon','Carpentras','Cavaillon','Orange','Apt','Isle-sur-Sorgue'],
+  'Aix-en-Provence':['Aix-en-Provence','Gardanne','Pertuis','Aubagne','Vitrolles','Marignane'],
+  'Rouen':['Rouen','Le Havre','Caen','Evreux','Dieppe','Fecamp','Sotteville-les-Rouen'],
+  'Clermont-Ferrand':['Clermont-Ferrand','Thiers','Riom','Issoire','Vichy','Moulins'],
+  'Nancy':['Nancy','Metz','Thionville','Epinal','Forbach','Sarreguemines'],
+  'Dijon':['Dijon','Beaune','Chalon-sur-Saone','Auxerre','Sens','Macon'],
+  'Reims':['Reims','Epernay','Troyes','Chalons-en-Champagne','Charleville-Mezieres'],
+  'Tours':['Tours','Blois','Orleans','Chartres','Bourges','Chateauroux'],
+  'Angers':['Angers','Cholet','Saumur','La Roche-sur-Yon','Les Sables-Olonne'],
+  'Brest':['Brest','Quimper','Lorient','Vannes','Saint-Brieuc','Lannion'],
+  'Pau':['Pau','Bayonne','Biarritz','Anglet','Hendaye','Tarbes','Lourdes'],
+  'Perpignan':['Perpignan','Narbonne','Carcassonne','Castelnaudary','Prades'],
+  'Limoges':['Limoges','Perigueux','Brive-la-Gaillarde','Tulle','Gueret'],
+  'Amiens':['Amiens','Compiegne','Beauvais','Soissons','Laon','Saint-Quentin'],
+  'Besancon':['Besancon','Montbeliard','Belfort','Pontarlier','Vesoul'],
+};
+
+// Zones prioritaires (20% des annonces sur ces villes à très fort potentiel)
+const PROVINCE_PRIORITAIRES = ['Lyon','Marseille','Toulouse','Bordeaux','Nantes','Nice','Montpellier','Lille','Strasbourg','Rennes','Grenoble','Toulon','Aix-en-Provence'];
+
+// Catalogue Province — produits avec +20€ transport
+const PRODUITS_PROVINCE = [
+  // Ensembles matelas + sommier
+  {nom:"Ensemble matelas + sommier",dim:"180x200",prix:339,priorite:"Très haute"},
+  {nom:"Ensemble matelas + sommier",dim:"90x190 - 15 cm",prix:179,priorite:"Haute"},
+  {nom:"Ensemble matelas + sommier",dim:"90x190 - 20 cm",prix:199,priorite:"Haute"},
+  // Lits coffre et Nico
+  {nom:"Lit coffre premium",dim:"160x200",prix:419,priorite:"Très haute"},
+  {nom:"Lit coffre premium",dim:"140x190",prix:379,priorite:"Très haute"},
+  {nom:"Lit Nico - Noir",dim:"140x190",prix:319,priorite:"Haute"},
+  {nom:"Lit Nico - Noir",dim:"160x200",prix:369,priorite:"Haute"},
+  {nom:"Lit Nico - Blanc",dim:"140x190",prix:319,priorite:"Haute"},
+  {nom:"Lit Nico - Blanc",dim:"160x200",prix:369,priorite:"Haute"},
+  {nom:"Lit Nico - Gris",dim:"140x190",prix:319,priorite:"Haute"},
+  {nom:"Lit Nico - Gris",dim:"160x200",prix:369,priorite:"Haute"},
+  // Matelas Dodo Confort — Prix Province (+20€ transport inclus)
+  {nom:"Matelas Dodo Confort Memoire de Forme 15cm",dim:"90x190",prix:109,priorite:"Haute"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm",dim:"90x200",prix:119,priorite:"Haute"},
+  {nom:"Matelas Memoire de Forme 20cm Soutien Ferme",dim:"120x190",prix:169,priorite:"Haute"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm",dim:"140x190",prix:169,priorite:"Très haute"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm Double Confort",dim:"140x200",prix:179,priorite:"Très haute"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm Premium",dim:"160x200",prix:189,priorite:"Très haute"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm King Size",dim:"180x200",prix:229,priorite:"Très haute"},
+];
+
+const VILLES_IDF = {
+  '75':['Paris 1er','Paris 2e','Paris 3e','Paris 4e','Paris 5e','Paris 6e','Paris 7e','Paris 8e','Paris 9e','Paris 10e','Paris 11e','Paris 12e','Paris 13e','Paris 14e','Paris 15e','Paris 16e','Paris 17e','Paris 18e','Paris 19e','Paris 20e'],
+  '92':['Boulogne-Billancourt','Nanterre','Courbevoie','Asnières-sur-Seine','Colombes','Levallois-Perret','Rueil-Malmaison','Issy-les-Moulineaux','Antony','Clichy','Clamart','Meudon','Suresnes','Puteaux','Neuilly-sur-Seine','Gennevilliers','Montrouge','Châtenay-Malabry','Bagneux','Châtillon'],
+  '93':['Saint-Denis','Montreuil','Aubervilliers','Drancy','Noisy-le-Grand','Pantin','Épinay-sur-Seine','Bondy','Bobigny','Sevran','Aulnay-sous-Bois','Livry-Gargan','Rosny-sous-Bois','Saint-Ouen-sur-Seine','La Courneuve','Bagnolet','Les Lilas','Villemomble','Pierrefitte-sur-Seine','Villepinte'],
+  '94':['Créteil','Vitry-sur-Seine','Champigny-sur-Marne','Saint-Maur-des-Fossés','Ivry-sur-Seine','Maisons-Alfort','Fontenay-sous-Bois','Vincennes','Alfortville','Choisy-le-Roi','Villejuif','Villeneuve-Saint-Georges','Nogent-sur-Marne','L\'Haÿ-les-Roses','Cachan','Charenton-le-Pont','Orly','Rungis','Limeil-Brévannes','Thiais'],
+  '95':['Argenteuil','Cergy','Sarcelles','Garges-lès-Gonesse','Franconville','Goussainville','Ermont','Bezons','Pontoise','Taverny','Eaubonne','Herblay-sur-Seine','Villiers-le-Bel','Montmorency','Enghien-les-Bains','Saint-Gratien','Soisy-sous-Montmorency','Osny','Conflans-Sainte-Honorine (95)','Jouy-le-Moutier'],
+  '78':['Versailles','Saint-Germain-en-Laye','Sartrouville','Mantes-la-Jolie','Poissy','Conflans-Sainte-Honorine','Montigny-le-Bretonneux','Houilles','Trappes','Les Mureaux','Rambouillet','Chatou','Plaisir','Vélizy-Villacoublay','Guyancourt','Élancourt','La Celle-Saint-Cloud','Viroflay','Le Pecq','Bougival'],
+  '91':['Évry-Courcouronnes','Massy','Palaiseau','Corbeil-Essonnes','Viry-Châtillon','Grigny','Brétigny-sur-Orge','Les Ulis','Longjumeau','Juvisy-sur-Orge','Brunoy','Yerres','Ris-Orangis','Fleury-Mérogis','Montgeron','Draveil','Savigny-sur-Orge','Vigneux-sur-Seine','Athis-Mons','Chilly-Mazarin'],
+  '77':['Meaux','Melun','Chelles','Pontault-Combault','Savigny-le-Temple','Villeparisis','Combs-la-Ville','Torcy','Roissy-en-Brie','Champs-sur-Marne','Lagny-sur-Marne','Bussy-Saint-Georges','Fontainebleau','Provins','Noisiel','Lognes','Ozoir-la-Ferrière','Mitry-Mory','Dammartin-en-Goële','Coulommiers'],
+};
+
+// PRODUITS pour le générateur
+const PRODUITS_GEN = [
+  {nom:"Ensemble matelas + sommier",dim:"90×190 - 15 cm",prix:159,priorite:"Haute"},
+  {nom:"Ensemble matelas + sommier",dim:"90×190 - 20 cm",prix:179,priorite:"Haute"},
+  {nom:"Ensemble matelas + sommier",dim:"90×200 - 15 cm",prix:169,priorite:"Haute"},
+  {nom:"Ensemble matelas + sommier",dim:"120×190",prix:229,priorite:"Très haute"},
+  {nom:"Ensemble matelas + sommier",dim:"140×190 - 15 cm",prix:209,priorite:"Très haute"},
+  {nom:"Ensemble matelas + sommier",dim:"140×190 - 20 cm",prix:229,priorite:"Très haute"},
+  {nom:"Ensemble matelas + sommier",dim:"140×200",prix:249,priorite:"Très haute"},
+  {nom:"Ensemble matelas + sommier",dim:"160×200",prix:259,priorite:"Très haute"},
+  {nom:"Ensemble matelas + sommier",dim:"180×200",prix:319,priorite:"Très haute"},
+  {nom:"Lit coffre premium",dim:"140x190",prix:359,priorite:"Très haute"},
+  {nom:"Lit coffre premium",dim:"160x200",prix:399,priorite:"Très haute"},
+  {nom:"Matelas mémoire de forme seul",dim:"90×190 - 15 cm",prix:99,priorite:"Moyenne"},
+  {nom:"Matelas mémoire de forme seul",dim:"140×190 - 20 cm",prix:169,priorite:"Haute"},
+  {nom:"Matelas mémoire de forme seul",dim:"160×200 - 20 cm",prix:189,priorite:"Haute"},
+  {nom:"Matelas mémoire de forme seul",dim:"180×200 - 20 cm",prix:229,priorite:"Haute"},
+  {nom:"Sommier tapissier seul",dim:"90×190",prix:99,priorite:"Moyenne"},
+  {nom:"Sommier tapissier seul",dim:"140×190",prix:149,priorite:"Moyenne"},
+  {nom:"Sommier tapissier seul",dim:"160×200",prix:179,priorite:"Moyenne"},
+  {nom:"Lit Nico - Noir",dim:"140x190",prix:299,priorite:"Haute"},
+  {nom:"Lit Nico - Noir",dim:"160x200",prix:349,priorite:"Haute"},
+  {nom:"Lit Nico - Blanc",dim:"140x190",prix:299,priorite:"Haute"},
+  {nom:"Lit Nico - Gris",dim:"160x200",prix:349,priorite:"Haute"},
+  {nom:"Lit superposé 2+1",dim:"bas 140x190 + haut 90x190",prix:499,priorite:"Haute"},
+  {nom:"Canapé Cozy 3 places",dim:"3 places",prix:349,priorite:"Moyenne"},
+  // Matelas Dodo Confort seul — IDF
+  {nom:"Matelas Dodo Confort Memoire de Forme 15cm",dim:"90x190",prix:89,priorite:"Haute"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm",dim:"90x200",prix:99,priorite:"Haute"},
+  {nom:"Matelas Memoire de Forme 20cm Soutien Ferme",dim:"120x190",prix:149,priorite:"Haute"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm",dim:"140x190",prix:149,priorite:"Haute"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm Double Confort",dim:"140x200",prix:159,priorite:"Haute"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm Premium",dim:"160x200",prix:169,priorite:"Très haute"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm King Size",dim:"180x200",prix:209,priorite:"Très haute"},
+];
+
+const BASE_PRODUCTS = [
+  {nom:"Ensemble mat.+som. 90×190-15cm",dim:"90×190 - 15 cm",prix:159,marge:25.7,ref:"MPP1590190",cat:"Ensemble matelas + sommier"},
+  {nom:"Ensemble mat.+som. 90×190-20cm",dim:"90×190 - 20 cm",prix:179,marge:29.2,ref:"MPP2090190",cat:"Ensemble matelas + sommier"},
+  {nom:"Ensemble mat.+som. 90×200-15cm",dim:"90×200 - 15 cm",prix:169,marge:28.4,ref:"MPP1590200",cat:"Ensemble matelas + sommier"},
+  {nom:"Ensemble mat.+som. 90×200-20cm",dim:"90×200 - 20 cm",prix:179,marge:27.7,ref:"MPP2090200",cat:"Ensemble matelas + sommier"},
+  {nom:"Ensemble mat.+som. 120×190",    dim:"120×190",         prix:229,marge:36.1,ref:"MPP20120190",cat:"Ensemble matelas + sommier"},
+  {nom:"Ensemble mat.+som. 140×190-15cm",dim:"140×190 - 15 cm",prix:209,marge:30.1,ref:"MPP15140190",cat:"Ensemble matelas + sommier"},
+  {nom:"Ensemble mat.+som. 140×190-20cm",dim:"140×190 - 20 cm",prix:229,marge:30.4,ref:"MPP20140190",cat:"Ensemble matelas + sommier"},
+  {nom:"Ensemble mat.+som. 140×200",    dim:"140×200",         prix:249,marge:34.6,ref:"MPP20140200",cat:"Ensemble matelas + sommier"},
+  {nom:"Ensemble mat.+som. 160×200",    dim:"160×200",         prix:259,marge:31.7,ref:"MPP20160200",cat:"Ensemble matelas + sommier"},
+  {nom:"Ensemble mat.+som. 180×200",    dim:"180×200",         prix:319,marge:38.0,ref:"MPP20180200",cat:"Ensemble matelas + sommier"},
+  {nom:"Lit coffre premium 160x200",dim:"160x200",prix:399,marge:null,ref:"",cat:"Lit coffre premium"},
+  {nom:"Lit coffre premium 140x190",dim:"140x190",prix:359,marge:null,ref:"",cat:"Lit coffre premium"},
+  {nom:"Matelas mémoire forme 90×190-15cm",dim:"90×190-15cm",prix:99,marge:null,ref:"",cat:"Matelas mémoire de forme seul"},
+  {nom:"Matelas mémoire forme 140×190-20cm",dim:"140×190-20cm",prix:169,marge:null,ref:"",cat:"Matelas mémoire de forme seul"},
+  {nom:"Matelas mémoire forme 160×200-20cm",dim:"160×200-20cm",prix:189,marge:null,ref:"",cat:"Matelas mémoire de forme seul"},
+  {nom:"Matelas mémoire forme 180×200-20cm",dim:"180×200-20cm",prix:229,marge:null,ref:"",cat:"Matelas mémoire de forme seul"},
+  {nom:"Sommier tapissier 90×190",dim:"90×190",prix:99,marge:null,ref:"",cat:"Sommier tapissier seul"},
+  {nom:"Sommier tapissier 140×190",dim:"140×190",prix:149,marge:null,ref:"",cat:"Sommier tapissier seul"},
+  {nom:"Sommier tapissier 160×200",dim:"160×200",prix:179,marge:null,ref:"",cat:"Sommier tapissier seul"},
+  {nom:"Sommier tapissier 180×200",dim:"180×200",prix:219,marge:null,ref:"",cat:"Sommier tapissier seul"},
+  {nom:"Lit Nico - Noir 140x190",dim:"140x190",prix:299,marge:null,ref:"",cat:"Lit Nico"},
+  {nom:"Lit Nico - Noir 160x200",dim:"160x200",prix:349,marge:null,ref:"",cat:"Lit Nico"},
+  {nom:"Lit Nico - Blanc 140x190",dim:"140x190",prix:299,marge:null,ref:"",cat:"Lit Nico"},
+  {nom:"Lit Nico - Blanc 160x200",dim:"160x200",prix:349,marge:null,ref:"",cat:"Lit Nico"},
+  {nom:"Lit Nico - Gris 140x190",dim:"140x190",prix:299,marge:null,ref:"",cat:"Lit Nico"},
+  {nom:"Lit Nico - Gris 160x200",dim:"160x200",prix:349,marge:null,ref:"",cat:"Lit Nico"},
+  {nom:"Lit superposé 2+1",dim:"bas 140x190+haut 90x190",prix:499,marge:null,ref:"",cat:"Lit superposé"},
+  {nom:"Lit superposé 1+1",dim:"90x190+90x190",prix:399,marge:null,ref:"",cat:"Lit superposé"},
+  {nom:"Canapé Cozy 3 places",dim:"3 places",prix:349,marge:null,ref:"",cat:"Canapé"},
+  // MATELAS MAXICONFORT.FR — Collection Dodo Confort OEKO-TEX
+  {nom:"Matelas Dodo Confort Memoire de Forme 15cm",              dim:"90x190",  prix:89,  marge:null, ref:"DODO-9019-15",    cat:"Matelas seul"},
+  {nom:"Matelas Memoire de Forme 20cm Ferme",                     dim:"90x190",  prix:99,  marge:null, ref:"MAT-9019-20",     cat:"Matelas seul"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 15cm",              dim:"90x200",  prix:89,  marge:null, ref:"DODO-9020-15",    cat:"Matelas seul"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm",              dim:"90x200",  prix:99,  marge:null, ref:"DODO-9020-20",    cat:"Matelas seul"},
+  {nom:"Matelas Memoire de Forme 20cm Soutien Ferme",             dim:"120x190", prix:149, marge:null, ref:"MAT-12019-20",    cat:"Matelas seul"},
+  {nom:"Matelas Memoire de Forme 15cm Compact",                   dim:"140x190", prix:129, marge:null, ref:"MAT-14019-15",    cat:"Matelas seul"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm",              dim:"140x190", prix:149, marge:null, ref:"DODO-14019-20",   cat:"Matelas seul"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm Double Confort",dim:"140x200",prix:159, marge:null, ref:"DODO-14020-20",   cat:"Matelas seul"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm Premium",      dim:"160x200", prix:169, marge:null, ref:"DODO-16020-20",   cat:"Matelas seul"},
+  {nom:"Matelas Dodo Confort Memoire de Forme 20cm King Size",    dim:"180x200", prix:209, marge:null, ref:"DODO-18020-20",   cat:"Matelas seul"},
+  {nom:"Ensemble Matelas Dodo Confort 15cm + Sommier Lattes",     dim:"140x190", prix:189, marge:null, ref:"ENS-DODO-14019",  cat:"Ensemble matelas + sommier"},
+  // MATELAS PROVINCE — +20€ transport inclus
+  {nom:"Matelas Dodo Confort 15cm Province",                      dim:"90x190",  prix:109, marge:null, ref:"DODO-9019-15-P",  cat:"Matelas seul Province"},
+  {nom:"Matelas Dodo Confort 20cm Province",                      dim:"90x200",  prix:119, marge:null, ref:"DODO-9020-20-P",  cat:"Matelas seul Province"},
+  {nom:"Matelas Memoire de Forme 20cm Province",                  dim:"120x190", prix:169, marge:null, ref:"MAT-12019-20-P",  cat:"Matelas seul Province"},
+  {nom:"Matelas Dodo Confort 20cm Province",                      dim:"140x190", prix:169, marge:null, ref:"DODO-14019-20-P", cat:"Matelas seul Province"},
+  {nom:"Matelas Dodo Confort 20cm Double Confort Province",       dim:"140x200", prix:179, marge:null, ref:"DODO-14020-20-P", cat:"Matelas seul Province"},
+  {nom:"Matelas Dodo Confort 20cm Premium Province",              dim:"160x200", prix:189, marge:null, ref:"DODO-16020-20-P", cat:"Matelas seul Province"},
+  {nom:"Matelas Dodo Confort 20cm King Size Province",            dim:"180x200", prix:229, marge:null, ref:"DODO-18020-20-P", cat:"Matelas seul Province"},
+];
+
+const TITRES_MODELES = [
+  (p,d,v)=>`${p} ${d} neuf - livraison gratuite ${v}`,
+  (p,d,v)=>`${p} ${d} disponible rapidement à ${v}`,
+  (p,d,v)=>`Literie neuve ${d} - ${p} - ${v}`,
+  (p,d,v)=>`${p} ${d} direct usine secteur ${v}`,
+  (p,d,v)=>`Promo ${p} ${d} livraison IDF ${v}`,
+  (p,d,v)=>`${p} ${d} Maxiconfort - stock dispo ${v}`,
+];
+const PHOTOS = ['Photo A','Photo B','Photo C','Photo D','Photo E','Photo F','Photo G','Photo H'];
+const TEXTES = ['Texte A','Texte B','Texte C','Texte D','Texte E','Texte F'];
+
+// ============================================================
+// SUPABASE CONFIG
+// ============================================================
+const SB_URL = 'https://jmvfjtnmebstkzcfnlgp.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptdmZqdG5tZWJzdGt6Y2ZubGdwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODc5NjE4NiwiZXhwIjoyMDk0MzcyMTg2fQ.qHECB0bMYpwzeP3nlXZ4vX2lucHE1V9I_997WFGt_Og';
+
+function sbHeaders(extra={}) {
+  return {
+    'Content-Type': 'application/json',
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'Prefer': 'return=minimal',
+    ...extra
+  };
+}
+
+async function sbGet(table, params='') {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: sbHeaders() });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function sbUpsert(table, data) {
+  const rows = Array.isArray(data) ? data : [data];
+  for (let i = 0; i < rows.length; i += 200) {
+    const batch = rows.slice(i, i + 200);
+    const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Prefer': 'resolution=merge-duplicates,return=minimal',
+        'X-Client-Info': 'maxiconfort-lbc'
+      },
+      body: JSON.stringify(batch)
+    });
+    if (!r.ok) {
+      const errText = await r.text();
+      console.error('sbUpsert error:', r.status, errText);
+      throw new Error(errText);
+    }
+  }
+}
+
+async function sbPatch(table, id, data) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) {
+    const errText = await r.text();
+    console.error('sbPatch error:', r.status, errText);
+    throw new Error(errText);
+  }
+}
+
+async function sbDelete(table, id) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: sbHeaders()
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let records=[], products=[], customIdCounter=1, filteredIds=[], daysList=[];
+let syncTimer=null, lastSyncTime=null, isSyncing=false;
+
+function showSyncStatus(msg, type='ok') {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = type==='ok' ? 'var(--green)' : type==='err' ? 'var(--red)' : 'var(--amber)';
+}
+
+function setAppLoading(on) {
+  const o = document.getElementById('loading-overlay');
+  if (o) o.style.display = on ? 'flex' : 'none';
+}
+
+// ---- SAUVEGARDE LOCALE ----
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem('lbc_mc_records', JSON.stringify(records));
+    localStorage.setItem('lbc_mc_products', JSON.stringify(products));
+    localStorage.setItem('lbc_mc_counter', String(customIdCounter));
+  } catch(e) {}
+}
+
+function loadFromLocalStorage() {
+  try {
+    const sr = localStorage.getItem('lbc_mc_records');
+    const sp = localStorage.getItem('lbc_mc_products');
+    const sc = localStorage.getItem('lbc_mc_counter');
+    if (sr) records = JSON.parse(sr);
+    if (sp) products = JSON.parse(sp);
+    if (sc) customIdCounter = parseInt(sc) || 1;
+  } catch(e) {}
+}
+
+// ---- CHARGEMENT SUPABASE ----
+async function loadFromSupabase() {
+  const [ann, prods, cfg] = await Promise.all([
+    sbGet('lbc_annonces', 'select=*&order=heure.asc&limit=5000'),
+    sbGet('lbc_produits', 'select=*&order=cat.asc,nom.asc&limit=500'),
+    sbGet('lbc_config', 'key=eq.custom_counter&select=value')
+  ]);
+  if (ann && ann.length > 0) records = ann;
+  if (prods && prods.length > 0) products = prods;
+  if (cfg && cfg[0]) customIdCounter = parseInt(cfg[0].value) || 1;
+  lastSyncTime = new Date();
+  saveToLocalStorage();
+}
+
+// ---- INIT ----
+async function init() {
+  showSyncStatus('⟳ Connexion...', 'loading');
+  setAppLoading(true);
+  try {
+    await loadFromSupabase();
+    showSyncStatus('✓ Synchronisé — ' + new Date().toLocaleTimeString('fr-FR'));
+  } catch(e) {
+    loadFromLocalStorage();
+    showSyncStatus('⚠ Hors-ligne (données locales)', 'err');
+  }
+  setAppLoading(false);
+  if (products.length === 0) {
+    products = BASE_PRODUCTS.map((p, i) => ({...p, id: 'P' + i}));
+    try { await sbUpsert('lbc_produits', products); } catch(e) {}
+  }
+  buildProductSelect();
+  buildDayFilter();
+  renderTable();
+  renderProducts();
+  renderRenta();
+  renderRadar();
+  updateStats();
+  // Auto-sync toutes les 20 secondes
+  if (syncTimer) clearInterval(syncTimer);
+  syncTimer = setInterval(autoSync, 20000);
+}
+
+// ---- AUTO SYNC ----
+async function autoSync() {
+  if (isSyncing) return;
+  isSyncing = true;
+  try {
+    const since = lastSyncTime ? lastSyncTime.toISOString() : '1970-01-01T00:00:00Z';
+
+    // Sync annonces ET produits en parallèle
+    const [updatedAnn, updatedProds] = await Promise.all([
+      sbGet('lbc_annonces', `updated_at=gt.${since}&select=*`),
+      sbGet('lbc_produits', `updated_at=gt.${since}&select=*`)
+    ]);
+
+    let hasChanges = false;
+
+    // Màj annonces
+    if (updatedAnn && updatedAnn.length > 0) {
+      updatedAnn.forEach(u => {
+        const idx = records.findIndex(r => r.id === u.id);
+        if (idx >= 0) records[idx] = {...records[idx], ...u};
+        else records.push(u);
+      });
+      buildDayFilter();
+      renderTable();
+      updateStats();
+      hasChanges = true;
+    }
+
+    // Màj produits (prix, marges modifiés par admin)
+    if (updatedProds && updatedProds.length > 0) {
+      updatedProds.forEach(u => {
+        const idx = products.findIndex(p => p.id === u.id);
+        if (idx >= 0) products[idx] = {...products[idx], ...u};
+        else products.push(u);
+      });
+      buildProductSelect();
+      renderProducts();
+      hasChanges = true;
+    }
+
+    if (hasChanges) saveToLocalStorage();
+
+    const total = (updatedAnn?.length||0) + (updatedProds?.length||0);
+    showSyncStatus('✓ ' + new Date().toLocaleTimeString('fr-FR') + (total > 0 ? ' (' + total + ' màj)' : ''));
+    lastSyncTime = new Date();
+  } catch(e) {
+    showSyncStatus('⚠ Sync échoué', 'err');
+  }
+  isSyncing = false;
+}
+
+// ---- SYNC MANUEL ----
+async function manualSync() {
+  showSyncStatus('⟳ Synchronisation...', 'loading');
+  setAppLoading(true);
+  try {
+    await loadFromSupabase();
+    buildProductSelect(); buildDayFilter(); renderTable(); renderProducts(); renderRenta(); renderRadar(); updateStats();
+    showSyncStatus('✓ Synchronisé — ' + new Date().toLocaleTimeString('fr-FR'));
+  } catch(e) {
+    showSyncStatus('⚠ Erreur: ' + e.message, 'err');
+  }
+  setAppLoading(false);
+}
+
+// ---- SAUVEGARDE SUPABASE ----
+async function saveRecordToSupabase(record) {
+  const ts = new Date().toISOString();
+  const row = {...record, updated_at: ts};
+  // Essayer PATCH d'abord (mise à jour), puis POST si nouveau
+  try {
+    await sbPatch('lbc_annonces', record.id, {
+      validation: record.validation,
+      statut: record.statut,
+      lien: record.lien || '',
+      commentaire: record.commentaire || '',
+      prix: record.prix,
+      updated_at: ts
+    });
+  } catch(e) {
+    // Si PATCH échoue (enregistrement n'existe pas encore), faire upsert complet
+    await sbUpsert('lbc_annonces', [row]);
+  }
+}
+
+async function saveBulkRecordsToSupabase(recs) {
+  const rows = recs.map(r => ({...r, updated_at: new Date().toISOString()}));
+  await sbUpsert('lbc_annonces', rows);
+}
+
+async function saveProductsToSupabase() {
+  const prods = products.map(p => ({...p, updated_at: new Date().toISOString()}));
+  await sbUpsert('lbc_produits', prods);
+}
+
+async function saveCounterToSupabase() {
+  await sbUpsert('lbc_config', [{key: 'custom_counter', value: String(customIdCounter)}]);
+}
+
+async function deleteRecordFromSupabase(id) {
+  await sbDelete('lbc_annonces', id);
+}
+
+async function deleteProductFromSupabase(id) {
+  await sbDelete('lbc_produits', id);
+}
+
+// ---- SAUVEGARDER TOUT ----
+async function saveAll() {
+  const btn = document.getElementById('save-btn');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Sauvegarde...';
+  btn.disabled = true;
+  showSyncStatus('⟳ Sauvegarde en cours...', 'loading');
+  try {
+    await saveBulkRecordsToSupabase(records);
+    await saveProductsToSupabase();
+    await saveCounterToSupabase();
+    saveToLocalStorage();
+    lastSyncTime = new Date();
+    showSyncStatus('✓ Sauvegardé — ' + new Date().toLocaleTimeString('fr-FR'));
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Sauvegardé !';
+  } catch(e) {
+    saveToLocalStorage();
+    showSyncStatus('⚠ Erreur Supabase — données locales OK', 'err');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Erreur sync';
+  }
+  btn.disabled = false;
+  setTimeout(() => {
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Sauvegarder';
+    btn.disabled = false;
+  }, 3000);
+}
+
+// ============================================================
+// GÉNÉRATEUR TOILE D'ARAIGNÉE
+// ============================================================
+function timeToMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
+function minToTime(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+
+function buildProvincePlan(nb, startTime, endTime, dayNum) {
+  const startMin = timeToMin(startTime);
+  const endMin   = timeToMin(endTime);
+  const interval = Math.floor((endMin - startMin) / nb);
+
+  // Pool villes province — 50% prioritaires, 50% autres
+  let villePool = [];
+  const allVilles = Object.values(VILLES_PROVINCE).flat();
+  const villesPrio = PROVINCE_PRIORITAIRES.flatMap(c => VILLES_PROVINCE[c]||[]);
+  
+  // Remplir : alterner prio et autres
+  for(let i=0; i<nb; i++){
+    if(i%2===0 && villesPrio.length){
+      villePool.push(villesPrio[i%(villesPrio.length)]);
+    } else {
+      villePool.push(allVilles[i%allVilles.length]);
+    }
+  }
+  
+  // Shuffle anti-cluster par zone géo
+  const zones = Object.keys(VILLES_PROVINCE);
+  let shuffled=[];
+  let byZone={};
+  zones.forEach(z=>{ byZone[z]=VILLES_PROVINCE[z].slice(); });
+  let zi=0;
+  while(shuffled.length<nb){
+    const zone=zones[zi%zones.length];
+    if(byZone[zone]&&byZone[zone].length>0) shuffled.push(byZone[zone].shift());
+    else shuffled.push(allVilles[shuffled.length%allVilles.length]);
+    zi++;
+  }
+  shuffled=shuffled.slice(0,nb);
+
+  const usedCombos = new Set();
+  const generated = [];
+  let photoIdx=0, texteIdx=0, titreIdx=0, prodIdx=0;
+
+  for(let i=0;i<nb;i++){
+    const ville = shuffled[i];
+    const heure = minToTime(startMin + i * interval);
+    const id = `PROV-J${String(dayNum).padStart(2,'0')}-${String(i+1).padStart(3,'0')}`;
+
+    let prod = null;
+    let tries = 0;
+    while(tries < PRODUITS_PROVINCE.length){
+      const candidate = PRODUITS_PROVINCE[(prodIdx+tries)%PRODUITS_PROVINCE.length];
+      const key = `${ville}|${candidate.nom}|${candidate.dim}`;
+      if(!usedCombos.has(key)){ prod=candidate; usedCombos.add(key); prodIdx=(prodIdx+tries+1)%PRODUITS_PROVINCE.length; break; }
+      tries++;
+    }
+    if(!prod){ prod=PRODUITS_PROVINCE[prodIdx%PRODUITS_PROVINCE.length]; prodIdx=(prodIdx+1)%PRODUITS_PROVINCE.length; }
+
+    const photo = PHOTOS[photoIdx%PHOTOS.length]; photoIdx++;
+    const texte = TEXTES[texteIdx%TEXTES.length]; texteIdx++;
+    const titreModel = TITRES_MODELES[titreIdx%TITRES_MODELES.length]; titreIdx++;
+    // Titres Province : insister sur livraison rapide
+    const titresProvince = [
+      (p,d,v)=>`${p} ${d} livraison rapide ${v} — stock disponible`,
+      (p,d,v)=>`${p} ${d} neuf livré chez vous à ${v}`,
+      (p,d,v)=>`${p} ${d} — livraison France entière — ${v}`,
+      (p,d,v)=>`Promo ${p} ${d} livraison domicile ${v}`,
+      (p,d,v)=>`${p} ${d} Maxiconfort livraison ${v}`,
+      (p,d,v)=>`${p} ${d} direct fabricant livré ${v}`,
+    ];
+    const titre = titresProvince[titreIdx%titresProvince.length](prod.nom, prod.dim, ville);
+
+    generated.push({
+      id, heure, ville, dept:'PROV', produit:prod.nom, dim:prod.dim,
+      prix:String(prod.prix), priorite:prod.priorite, titre, photo, texte,
+      validation:'OFF', statut:'À publier', lien:'', commentaire:'', custom:false
+    });
+  }
+  return generated;
+}
+
+function buildAntiBlacklistPlan(nb, startTime, endTime, dayNum, priMode) {
+  const startMin = timeToMin(startTime);
+  const endMin   = timeToMin(endTime);
+  const totalMin = endMin - startMin;
+  const interval = Math.floor(totalMin / nb);
+
+  // Pool de villes équilibré par dept
+  const depts = ['75','92','93','94','95','78','91','77'];
+  // Répartition cible par dept (proportionnelle)
+  const deptWeights = {'75':14,'92':14,'93':12,'94':12,'95':10,'78':12,'91':14,'77':12};
+  let villePool = [];
+  depts.forEach(d=>{
+    const villes = VILLES_IDF[d];
+    const count  = Math.ceil(nb * deptWeights[d] / 100);
+    for(let i=0;i<count;i++) villePool.push({ville:villes[i%villes.length],dept:d});
+  });
+  // Shuffle anti-cluster : alterner les depts
+  let shuffled=[];
+  let byDept={};
+  villePool.forEach(v=>{if(!byDept[v.dept])byDept[v.dept]=[];byDept[v.dept].push(v);});
+  let di=0;
+  while(shuffled.length<nb){
+    const dept=depts[di%depts.length];
+    if(byDept[dept]&&byDept[dept].length>0) shuffled.push(byDept[dept].shift());
+    else if(shuffled.length<nb) shuffled.push({ville:'Île-de-France',dept:'IDF'});
+    di++;
+  }
+  shuffled = shuffled.slice(0,nb);
+
+  // Pool produits selon mode
+  let prodPool = [...PRODUITS_GEN];
+  if(priMode==='ens') prodPool = prodPool.sort((a,b)=>a.nom.includes('Ensemble')?-1:1);
+  if(priMode==='lits') prodPool = prodPool.sort((a,b)=>a.nom.includes('Nico')||a.nom.includes('coffre')?-1:1);
+
+  // Génération avec règle anti-doublon ville+produit
+  const usedCombos = new Set();
+  const generated = [];
+  let photoIdx=0, texteIdx=0, titreIdx=0, prodIdx=0;
+
+  for(let i=0;i<nb;i++){
+    const {ville, dept} = shuffled[i];
+    const heure = minToTime(startMin + i * interval);
+    const id = `J${String(dayNum).padStart(2,'0')}-${String(i+1).padStart(3,'0')}`;
+
+    // Choisir un produit non utilisé pour cette ville
+    let prod = null;
+    let tries = 0;
+    while(tries < prodPool.length){
+      const candidate = prodPool[(prodIdx+tries) % prodPool.length];
+      const key = `${ville}|${candidate.nom}|${candidate.dim}`;
+      if(!usedCombos.has(key)){ prod=candidate; usedCombos.add(key); prodIdx=(prodIdx+tries+1)%prodPool.length; break; }
+      tries++;
+    }
+    if(!prod){ prod=prodPool[prodIdx%prodPool.length]; prodIdx=(prodIdx+1)%prodPool.length; }
+
+    const photo = PHOTOS[photoIdx%PHOTOS.length]; photoIdx++;
+    const texte = TEXTES[texteIdx%TEXTES.length]; texteIdx++;
+    const titreModel = TITRES_MODELES[titreIdx%TITRES_MODELES.length]; titreIdx++;
+    const titre = titreModel(prod.nom, prod.dim, ville);
+
+    generated.push({id, heure, ville, dept, produit:prod.nom, dim:prod.dim, prix:String(prod.prix), priorite:prod.priorite, titre, photo, texte, validation:'OFF', statut:'À publier', lien:'', commentaire:'', custom:false});
+  }
+  return generated;
+}
+
+function generatePlanning() {
+  const nb    = parseInt(document.getElementById('g-nb').value)||100;
+  const start = document.getElementById('g-start').value||'08:00';
+  const end   = document.getElementById('g-end').value||'21:00';
+  const day   = parseInt(document.getElementById('g-day').value)||1;
+  const mode  = document.getElementById('g-pri-mode').value;
+  const isProvince = currentRole === 'province';
+  const prefix = isProvince ? `PROV-J${String(day).padStart(2,'0')}-` : `J${String(day).padStart(2,'0')}-`;
+  records = records.filter(r=>!r.id.startsWith(prefix));
+  const newRecs = isProvince
+    ? buildProvincePlan(nb,start,end,day)
+    : buildAntiBlacklistPlan(nb,start,end,day,mode);
+  records = [...records, ...newRecs];
+  saveToLocalStorage();
+  showSyncStatus('⟳ Sauvegarde '+newRecs.length+' annonces...','loading');
+  saveBulkRecordsToSupabase(newRecs).then(()=>showSyncStatus('✓ Planning J'+day+' sauvegardé — '+new Date().toLocaleTimeString('fr-FR'))).catch(()=>showSyncStatus('⚠ Local seulement','err'));
+  buildDayFilter();
+  updateStats();
+  // Aller au planning et filtrer sur ce jour
+  switchTab('planning');
+  document.getElementById('f-jour').value = 'J'+String(day).padStart(2,'0');
+  renderTable();
+  document.getElementById('g-day').value = day+1;
+}
+
+function previewGeneration(){
+  const nb=Math.min(parseInt(document.getElementById('g-nb').value)||100,100);
+  const start=document.getElementById('g-start').value||'08:00';
+  const end=document.getElementById('g-end').value||'21:00';
+  const day=parseInt(document.getElementById('g-day').value)||1;
+  const mode=document.getElementById('g-pri-mode').value;
+  const preview=buildAntiBlacklistPlan(nb,start,end,day,mode).slice(0,15);
+  const chips=preview.map(r=>`<span class="prev-chip ok">${r.heure} ${r.ville} — ${r.produit.split(' ').slice(0,2).join(' ')} ${r.dim}</span>`).join('');
+  document.getElementById('preview-chips').innerHTML=chips;
+  document.getElementById('preview-result').style.display='block';
+}
+
+function renderRadar(){
+  const el=document.getElementById('radar-wrap');
+  if(!el) return;
+  const isProvince = currentRole==='province';
+  if(isProvince){
+    // Radar par grande ville Province
+    const zones=Object.keys(VILLES_PROVINCE).slice(0,8);
+    const colors=['#e8c547','#4caf82','#4789e8','#e89547','#8080e8','#47c8e8','#e85447','#c4a230'];
+    const total=records.filter(r=>r.dept==='PROV').length||1;
+    el.innerHTML=zones.map((z,i)=>{
+      const villesZone=VILLES_PROVINCE[z];
+      const count=records.filter(r=>villesZone.includes(r.ville)).length;
+      const pct=Math.round(count/total*100);
+      return `<div class="dept-card">
+        <div class="dept-name" style="color:${colors[i]}">${z}</div>
+        <div class="dept-prog"><div class="dept-fill" style="width:${Math.max(4,pct)}%;background:${colors[i]}"></div></div>
+        <div class="dept-count">${count} ann. · ${pct}%</div>
+      </div>`;
+    }).join('');
+    return;
+  }
+  // Radar IDF
+  const depts=[{code:'75',name:'75 Paris'},{code:'92',name:'92 H.-de-Seine'},{code:'93',name:'93 Seine-St-D.'},{code:'94',name:'94 Val-de-M.'},{code:'95',name:'95 Val-d\'Oise'},{code:'78',name:'78 Yvelines'},{code:'91',name:'91 Essonne'},{code:'77',name:'77 Seine-et-M.'}];
+  const colors=['#e8c547','#4caf82','#4789e8','#e89547','#8080e8','#47c8e8','#e85447','#c4a230'];
+  const total=records.length||1;
+  el.innerHTML=depts.map((d,i)=>{
+    const count=records.filter(r=>r.dept===d.code).length;
+    const pct=Math.round(count/total*100);
+    const barW=Math.max(4,pct);
+    return `<div class="dept-card">
+      <div class="dept-name" style="color:${colors[i]}">${d.name}</div>
+      <div class="dept-prog"><div class="dept-fill" style="width:${barW}%;background:${colors[i]}"></div></div>
+      <div class="dept-count">${count} ann. · ${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// PLANNING TABLE
+// ============================================================
+function buildDayFilter(){
+  const isProvince = currentRole==='province';
+  const filteredRecs = isProvince ? records.filter(r=>r.dept==='PROV') : records.filter(r=>r.dept!=='PROV');
+  daysList=[...new Set(filteredRecs.map(r=>r.id.split('-')[0]))].sort();
+  const sel=document.getElementById('f-jour');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Tous les jours</option>';
+  daysList.forEach(d=>{ const o=document.createElement('option'); o.value=d; o.textContent=`Jour ${d.replace('J','').replace(/^0/,'')} (${records.filter(r=>r.id.startsWith(d+'-')).length} ann.)`; sel.appendChild(o); });
+  sel.value=cur;
+}
+
+function buildTableHeader(){
+  const isAdmin=currentRole==='admin';
+  const cols=isAdmin
+    ?[['82px','ID'],['52px','Heure'],['110px','Ville'],['45px','Dept'],['140px','Produit'],['85px','Dimension'],['52px','PV TTC'],['50px','Marge%'],['68px','Priorité'],['180px','Titre'],['62px','Valid.'],['110px','Lien LBC'],['120px','Commentaire'],['34px','']]
+    :[['82px','ID'],['52px','Heure'],['115px','Ville'],['155px','Produit'],['90px','Dimension'],['56px','Prix TTC'],['72px','Priorité'],['190px','Titre annonce'],['68px','Valid.'],['120px','Lien LBC'],['130px','Commentaire'],['34px','']];
+  document.getElementById('planning-thead').innerHTML='<tr>'+cols.map(([w,l])=>`<th style="width:${w}">${l}</th>`).join('')+'</tr>';
+}
+
+function getFiltered(){
+  const srch=(document.getElementById('srch').value||'').toLowerCase();
+  const fj=document.getElementById('f-jour').value;
+  const fs=document.getElementById('f-statut').value;
+  const fd=document.getElementById('f-dept').value;
+  const isProvince = currentRole==='province';
+  const fp=document.getElementById('f-pri').value;
+  return records.filter(r=>{
+    if(srch&&!r.ville.toLowerCase().includes(srch)&&!r.produit.toLowerCase().includes(srch)&&!r.id.toLowerCase().includes(srch)) return false;
+    if(fj&&!r.id.startsWith(fj+'-')) return false;
+    if(fs==='ON'&&r.validation!=='ON') return false;
+    if(fs==='OFF'&&(r.validation!=='OFF'||r.statut==='Bloqué')) return false;
+    if(fs==='Bloqué'&&r.statut!=='Bloqué') return false;
+    // Filtre par dept ou zone Province
+    if(fd){
+      if(isProvince){
+        const zone = VILLES_PROVINCE[fd];
+        if(zone && !zone.includes(r.ville)) return false;
+      } else {
+        if(r.dept!==fd) return false;
+      }
+    }
+    // Province ne voit que ses annonces, IDF voit les siennes
+    if(isProvince && r.dept!=='PROV') return false;
+    if(!isProvince && currentRole!=='admin' && r.dept==='PROV') return false;
+    if(fp&&r.priorite!==fp) return false;
+    return true;
+  });
+}
+
+function renderTable(){
+  buildTableHeader();
+  const filtered=getFiltered();
+  filteredIds=filtered.map(r=>r.id);
+  document.getElementById('bulk-count').textContent=filtered.length+' annonces affichées';
+  const tbody=document.getElementById('tbl-body');
+  document.getElementById('empty-state').style.display=filtered.length?'none':'block';
+  if(!filtered.length){tbody.innerHTML='';return;}
+  const isAdmin=currentRole==='admin';
+  const deptColors={'75':'#e8c547','92':'#4caf82','93':'#4789e8','94':'#e89547','95':'#8080e8','78':'#47c8e8','91':'#e85447','77':'#c4a230'};
+  tbody.innerHTML=filtered.map(r=>{
+    const pb=r.priorite==='Très haute'?'b-th':r.priorite==='Haute'?'b-h':'b-m';
+    const vs=r.statut==='Bloqué'?'b-bloque':r.validation==='ON'?'b-on':'b-off';
+    const dc=deptColors[r.dept]||'var(--text3)';
+    const p=BASE_PRODUCTS.find(x=>x.nom.toLowerCase().includes(r.produit.toLowerCase().substring(0,12)));
+    const margeCell=isAdmin?(p&&p.marge?`<td style="font-size:10px;color:var(--green);font-family:'DM Mono',monospace;font-weight:600">${p.marge}%</td>`:'<td style="color:var(--text3)">—</td>'):'';
+    const deptCell=isAdmin?`<td style="font-family:'DM Mono',monospace;font-size:11px;color:${dc};font-weight:600">${r.dept}</td>`:'';
+    return `<tr>
+      <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3)">${r.id}${r.custom?' <span class="badge b-new">NEW</span>':''}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.heure}</td>
+      <td style="font-weight:500;font-size:12px">${r.ville}</td>
+      ${deptCell}
+      <td style="font-size:12px">${r.produit}</td>
+      <td style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${r.dim}</td>
+      <td style="padding:4px 6px">${isAdmin?`<input class="cell-input prix-input" type="number" value="${r.prix}" min="1" style="width:58px;color:var(--accent);font-weight:600;text-align:right" onchange="updPrix('${r.id}',this.value)" title="Modifier le prix">`:`<span style="font-weight:600;font-size:12px;color:var(--accent);font-family:'DM Mono',monospace">${r.prix}€</span>`}</td>
+      ${margeCell}
+      <td><span class="badge ${pb}">${r.priorite}</span></td>
+      <td><div class="titre-main" title="${r.titre}">${r.titre}</div><div class="titre-sub">${r.photo} · ${r.texte}</div></td>
+      <td style="text-align:center">
+        <button class="toggle ${r.validation==='ON'?'on':'off'}" onclick="toggleVal('${r.id}')"></button>
+        <div style="margin-top:2px"><span class="badge ${vs}">${r.statut==='Bloqué'?'BLOQUÉ':r.validation}</span></div>
+      </td>
+      <td><input class="cell-input" type="text" value="${r.lien}" placeholder="https://..." onchange="upd('${r.id}','lien',this.value)"></td>
+      <td><input class="cell-input" type="text" value="${r.commentaire}" placeholder="Note..." onchange="upd('${r.id}','commentaire',this.value)"></td>
+      <td>${r.custom?`<button class="icon-btn" onclick="deleteAnnonce('${r.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a1 1 0 011-1h2a1 1 0 011 1v2"/></svg></button>`:''}</td>
+    </tr>`;
+  }).join('');
+  updateStats();
+  renderRadar();
+}
+
+
+async function toggleVal(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  r.validation=r.validation==='ON'?'OFF':'ON';
+  r.statut=r.validation==='ON'?'Validée':'À publier';
+  r.updated_at=new Date().toISOString();
+  saveToLocalStorage();
+  renderTable();
+  showSyncStatus('⟳ Sauvegarde...','loading');
+  try {
+    await saveRecordToSupabase(r);
+    lastSyncTime = new Date();
+    showSyncStatus('✓ '+new Date().toLocaleTimeString('fr-FR'));
+  } catch(e) {
+    console.error('toggleVal save error:',e);
+    showSyncStatus('⚠ Non synchronisé — clique Sauvegarder','err');
+  }
+}
+async function upd(id,key,val){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  r[key]=val; r.updated_at=new Date().toISOString();
+  saveToLocalStorage();
+  try {
+    await saveRecordToSupabase(r);
+    lastSyncTime = new Date();
+    showSyncStatus('✓ '+new Date().toLocaleTimeString('fr-FR'));
+  } catch(e) {
+    showSyncStatus('⚠ Non synchronisé — clique Sauvegarder','err');
+  }
+}
+function bulkValidate(onOff){
+  filteredIds.forEach(id=>{const r=records.find(x=>x.id===id);if(r){r.validation=onOff?'ON':'OFF';r.statut=onOff?'Validée':'À publier';r.updated_at=new Date().toISOString();}});
+  saveToLocalStorage();renderTable();
+  const toSave=records.filter(r=>filteredIds.includes(r.id));
+  saveBulkRecordsToSupabase(toSave).then(()=>showSyncStatus('✓ Bulk sauvegardé — '+new Date().toLocaleTimeString('fr-FR'))).catch(()=>showSyncStatus('⚠ Sync échoué','err'));
+}
+function bulkBloque(){
+  filteredIds.forEach(id=>{const r=records.find(x=>x.id===id);if(r){r.statut='Bloqué';r.validation='OFF';r.updated_at=new Date().toISOString();}});
+  saveToLocalStorage();renderTable();
+  const toSave=records.filter(r=>filteredIds.includes(r.id));
+  saveBulkRecordsToSupabase(toSave).catch(()=>{});
+}
+function deleteAnnonce(id){
+  if(!confirm('Supprimer cette annonce ?')) return;
+  records=records.filter(r=>r.id!==id);
+  saveToLocalStorage();buildDayFilter();renderTable();updateStats();
+  deleteRecordFromSupabase(id).then(()=>showSyncStatus('✓ Supprimé — '+new Date().toLocaleTimeString('fr-FR'))).catch(()=>{});
+}
+
+function updateStats(){
+  const t=records.length, on=records.filter(r=>r.validation==='ON').length;
+  const pct=t>0?Math.round(on/t*100):0;
+  document.getElementById('s-total').textContent=t;
+  document.getElementById('s-on').textContent=on;
+  document.getElementById('s-off').textContent=t-on;
+  document.getElementById('s-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+}
+function resetFilters(){['srch','f-jour','f-statut','f-dept','f-pri'].forEach(id=>{document.getElementById(id).value='';});renderTable();}
+
+// ============================================================
+// CATALOGUE
+// ============================================================
+function buildProductSelect(){
+  const sel=document.getElementById('f-produit');
+  sel.innerHTML='<option value="">— Choisir —</option>';
+  products.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.nom+(p.dim?' ('+p.dim+')':'')+' — '+p.prix+'€';sel.appendChild(o);});
+}
+function autofillFromProduct(){const id=document.getElementById('f-produit').value;if(!id) return;const p=products.find(x=>x.id===id);if(!p) return;document.getElementById('f-dim').value=p.dim||'';document.getElementById('f-prix').value=p.prix||'';document.getElementById('f-produit-libre').value='';generateTitle();}
+function generateTitle(){const ville=document.getElementById('f-ville').value.trim();const prodId=document.getElementById('f-produit').value;const prodLibre=document.getElementById('f-produit-libre').value.trim();const dim=document.getElementById('f-dim').value.trim();let prodNom=prodLibre;if(!prodNom&&prodId){const p=products.find(x=>x.id===prodId);if(p)prodNom=p.nom;}if(!prodNom&&!ville) return;const v=TITRES_MODELES.map(fn=>fn(prodNom,dim,ville));document.getElementById('f-titre').value=v[Math.floor(Math.random()*v.length)];}
+
+function addAnnonce(){
+  const ville=document.getElementById('f-ville').value.trim();
+  const prodId=document.getElementById('f-produit').value;
+  const prodLibre=document.getElementById('f-produit-libre').value.trim();
+  const prix=document.getElementById('f-prix').value;
+  if(!ville||(!prodId&&!prodLibre)||!prix){alert('Champs obligatoires : Ville, Produit et Prix.');return;}
+  let prodNom=prodLibre;if(!prodNom&&prodId){const p=products.find(x=>x.id===prodId);if(p)prodNom=p.nom;}
+  const dim=document.getElementById('f-dim').value.trim();
+  const heure=document.getElementById('f-heure-form').value;
+  const dept=document.getElementById('f-dept-form').value.trim();
+  const priorite=document.getElementById('f-priorite-form').value;
+  const photo=document.getElementById('f-photo').value;
+  const texte=document.getElementById('f-texte').value;
+  let titre=document.getElementById('f-titre').value.trim();
+  if(!titre) titre=`${prodNom}${dim?' '+dim:''} - ${ville}`;
+  const commentaire=document.getElementById('f-comment-form').value.trim();
+  const newId='CUSTOM-'+String(customIdCounter).padStart(3,'0'); customIdCounter++;
+  const newRec = {id:newId,heure,ville,dept,produit:prodNom,dim,prix,priorite,titre,photo,texte,validation:'OFF',statut:'À publier',lien:'',commentaire,custom:true,updated_at:new Date().toISOString()};
+  records.push(newRec);
+  saveToLocalStorage();buildDayFilter();renderTable();updateStats();
+  saveRecordToSupabase(newRec).then(()=>saveCounterToSupabase()).catch(()=>{});
+  const f=document.getElementById('form-flash');f.textContent='✓ Annonce ajoutée : '+newId+' — '+titre;f.style.display='block';setTimeout(()=>f.style.display='none',3000);clearForm();
+}
+function clearForm(){['f-ville','f-dept-form','f-dim','f-prix','f-titre','f-produit-libre','f-comment-form'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('f-produit').value='';}
+
+function renderProducts(){
+  const el=document.getElementById('prod-list');
+  document.getElementById('prod-count-lbl').textContent=products.length+' produits — '+(currentRole==='admin'?'cliquer sur le prix ou la marge pour modifier':'vue collaboratrice');
+  const isAdmin=currentRole==='admin';
+  const cats=[...new Set(products.map(p=>p.cat))];
+  el.innerHTML=cats.map(cat=>{
+    const prods=products.filter(p=>p.cat===cat);
+    return `<div class="prod-category">
+      <div class="prod-cat-label">${cat}</div>
+      <div class="prod-grid">${prods.map(p=>`
+        <div class="prod-card" id="pc-${p.id}">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+            <div class="prod-card-name">${p.nom}</div>
+            ${isAdmin?`<button class="icon-btn" onclick="deleteProduct('${p.id}')" title="Supprimer" style="flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a1 1 0 011-1h2a1 1 0 011 1v2"/></svg></button>`:''}
+          </div>
+          <div class="prod-card-meta">${p.dim||'—'}${isAdmin&&p.ref?' · <span style="color:var(--text3)">'+p.ref+'</span>':''}</div>
+          <div class="prod-card-footer">
+            ${isAdmin
+              ?`<div style="display:flex;flex-direction:column;gap:4px;width:100%">
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;width:42px">Prix TTC</span>
+                    <input class="cell-input" type="number" value="${p.prix}" min="1" style="width:70px;color:var(--accent);font-weight:600;font-size:13px;text-align:right"
+                      onchange="updateProductField('${p.id}','prix',parseFloat(this.value))"
+                      title="Modifier le prix de vente TTC">
+                    <span style="font-size:12px;color:var(--accent);font-weight:600">€</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;width:42px">Marge</span>
+                    <input class="cell-input" type="number" value="${p.marge||''}" min="0" max="100" step="0.1" style="width:70px;color:var(--green);font-weight:600;font-size:13px;text-align:right"
+                      placeholder="—"
+                      onchange="updateProductField('${p.id}','marge',parseFloat(this.value)||null)"
+                      title="Modifier la marge %">
+                    <span style="font-size:12px;color:var(--green);font-weight:600">%</span>
+                  </div>
+                </div>`
+              :`<span class="prod-card-price">${p.prix}€</span>`
+            }
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateProductField(id, field, val){
+  const p=products.find(x=>x.id===id);
+  if(!p) return;
+  p[field]=val;
+  p.updated_at = new Date().toISOString();
+  // Propager le nouveau prix dans toutes les annonces du planning
+  if(field==='prix'){
+    records.forEach(r=>{
+      if(r.produit===p.nom && r.dim===p.dim) r.prix=String(val);
+    });
+    renderTable();
+    // Sauvegarder aussi les annonces impactées
+    const impacted = records.filter(r=>r.produit===p.nom && r.dim===p.dim);
+    if(impacted.length) saveBulkRecordsToSupabase(impacted).catch(()=>{});
+  }
+  saveToLocalStorage();
+  showSyncStatus('⟳ Sauvegarde prix...','loading');
+  try {
+    await saveProductsToSupabase();
+    lastSyncTime = new Date();
+    showSyncStatus('✓ Prix mis à jour — ' + new Date().toLocaleTimeString('fr-FR'));
+  } catch(e) {
+    showSyncStatus('⚠ Erreur sauvegarde prix','err');
+  }
+  buildProductSelect();
+  // Flash visuel sur la card
+  const card=document.getElementById('pc-'+id);
+  if(card){ card.style.borderColor='var(--green)'; setTimeout(()=>card.style.borderColor='',800); }
+}
+
+function addProduct(){
+  const nom    = document.getElementById('np-nom').value.trim();
+  const dim    = document.getElementById('np-dim').value.trim();
+  const prix   = parseFloat(document.getElementById('np-prix').value)||0;
+  const margeEl= document.getElementById('np-marge');
+  const marge  = margeEl ? (parseFloat(margeEl.value)||null) : null;
+  const ref    = (document.getElementById('np-ref')||{}).value?.trim()||'';
+  const cat    = document.getElementById('np-cat').value;
+  const priorite=(document.getElementById('np-priorite')||{}).value||'Haute';
+  const inGen  = (document.getElementById('np-gen')||{}).value==='1';
+
+  if(!nom||!prix){ alert('Nom et Prix TTC obligatoires.'); return; }
+
+  const newProd = {id:'P'+Date.now(), nom, dim, prix, marge, cat, ref, priorite};
+  products.push(newProd);
+
+  // Ajouter aussi dans PRODUITS_GEN pour le générateur
+  if(inGen){
+    PRODUITS_GEN.push({nom, dim, prix, priorite});
+  }
+
+  saveToLocalStorage();
+  saveProductsToSupabase().catch(()=>{});
+  buildProductSelect();
+  renderProducts();
+
+  // Flash confirmation
+  const f = document.getElementById('np-flash');
+  if(f){
+    f.textContent = '✓ Produit ajouté : ' + nom + (dim?' ('+dim+')':'') + ' — ' + prix + '€'+(inGen?' · inclus dans le générateur':'');
+    f.style.display='block';
+    setTimeout(()=>f.style.display='none', 3500);
+  }
+  clearProductForm();
+}
+
+// ============================================================
+// RENTABILITE
+// ============================================================
+function updPrix(id,val){
+  const r=records.find(x=>x.id===id);
+  if(!r) return;
+  r.prix=String(val);
+  r.updated_at=new Date().toISOString();
+  saveToLocalStorage();
+  saveRecordToSupabase(r).catch(()=>{});
+}
+
+function renderRenta(){
+  const isAdmin=currentRole==='admin';
+  document.getElementById('renta-body').innerHTML=RENTA_DATA.map((r,idx)=>{
+    const prT=(r.prMat+r.prSom).toFixed(2);
+    const pvHT=(r.pvTTC/1.20).toFixed(2);
+    const mE=(r.pvTTC/1.20-parseFloat(prT)-r.livraison).toFixed(2);
+    const pvCell=isAdmin
+      ?`<input class="cell-input" type="number" value="${r.pvTTC}" min="1" style="width:70px;color:var(--accent);font-weight:600;text-align:right" onchange="updateRentaPrice(${idx},parseFloat(this.value))" title="Modifier le PV TTC">&nbsp;€`
+      :`${r.pvTTC.toFixed(2)} €`;
+    return `<tr id="renta-row-${idx}">
+      <td>${r.ens}</td>
+      <td style="font-size:10px;color:var(--text3)">${r.ref}</td>
+      <td style="font-size:10px;color:var(--text3)">${r.som}</td>
+      <td class="pr-cell">${r.prMat.toFixed(2)}€</td>
+      <td class="pr-cell">${r.prSom.toFixed(2)}€</td>
+      <td style="font-weight:500">${prT}€</td>
+      <td class="pv-cell" id="pv-${idx}">${pvCell}</td>
+      <td id="pvht-${idx}">${pvHT}€</td>
+      <td>${r.livraison.toFixed(2)}€</td>
+      <td class="marge-cell" id="meu-${idx}">${mE}€</td>
+      <td class="marge-cell" style="font-weight:600" id="mpct-${idx}">${r.margePct.toFixed(1)}%</td>
+      <td class="coef-cell" id="coef-${idx}">${r.coef.toFixed(2)}x</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateRentaPrice(idx, newPvTTC){
+  if(isNaN(newPvTTC)||newPvTTC<=0) return;
+  RENTA_DATA[idx].pvTTC = newPvTTC;
+  // Recalcul
+  const r = RENTA_DATA[idx];
+  const prT = r.prMat+r.prSom;
+  const pvHT = newPvTTC/1.20;
+  const mE = pvHT-prT-r.livraison;
+  const mPct = mE/pvHT*100;
+  const coef = newPvTTC/prT;
+  RENTA_DATA[idx].margePct = mPct;
+  RENTA_DATA[idx].coef = coef;
+  // Update cells
+  document.getElementById('pvht-'+idx).textContent=pvHT.toFixed(2)+'€';
+  document.getElementById('meu-'+idx).textContent=mE.toFixed(2)+'€';
+  document.getElementById('mpct-'+idx).textContent=mPct.toFixed(1)+'%';
+  document.getElementById('coef-'+idx).textContent=coef.toFixed(2)+'x';
+  // Propager dans le catalogue products
+  const ensNom = r.ens.replace('Ens. ','').trim();
+  const p = products.find(x=>x.dim&&x.dim.replace(/\s/g,'').toLowerCase()===ensNom.replace(/\s/g,'').toLowerCase());
+  if(p){ p.prix=newPvTTC; p.marge=parseFloat(mPct.toFixed(1)); }
+  // Propager dans le planning
+  records.forEach(rec=>{
+    if(rec.produit&&rec.produit.toLowerCase().includes('ensemble')&&rec.dim&&rec.dim.replace(/\s/g,'').toLowerCase()===ensNom.replace(/\s/g,'').toLowerCase()){
+      rec.prix=String(newPvTTC);
+    }
+  });
+  saveToLocalStorage();
+  saveProductsToSupabase().catch(()=>{});
+  const toSaveRec=records.filter(r=>r.produit&&r.produit.toLowerCase().includes('ensemble'));
+  if(toSaveRec.length) saveBulkRecordsToSupabase(toSaveRec).catch(()=>{});
+  buildProductSelect();
+  renderTable();
+  // Flash row
+  const row=document.getElementById('renta-row-'+idx);
+  if(row){row.style.background='var(--green-bg)';setTimeout(()=>row.style.background='',800);}
+}
+
+// ============================================================
+// NAV & EXPORT
+// ============================================================
+function switchTab(name){
+  const tabs=['planning','generateur','produits','ajouter','rentabilite'];
+  document.querySelectorAll('.tab-btn').forEach((t,i)=>t.classList.toggle('active',tabs[i]===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+function exportCSV(){
+  const isAdmin=currentRole==='admin';
+  const h=isAdmin?'ID,Heure,Ville,Dept,Produit,Dimension,Prix TTC,Marge%,Priorite,Titre,Photo,Texte,Validation,Statut,Lien,Commentaire\n':'ID,Heure,Ville,Produit,Dimension,Prix TTC,Priorite,Titre,Validation,Statut,Lien,Commentaire\n';
+  const rows=records.map(r=>{
+    const p=BASE_PRODUCTS.find(x=>x.nom.toLowerCase().includes(r.produit.toLowerCase().substring(0,12)));
+    return isAdmin?[r.id,r.heure,r.ville,r.dept,r.produit,r.dim,r.prix,p&&p.marge?p.marge:'',r.priorite,'"'+r.titre+'"',r.photo,r.texte,r.validation,r.statut,r.lien,'"'+r.commentaire+'"'].join(','):[r.id,r.heure,r.ville,r.produit,r.dim,r.prix,r.priorite,'"'+r.titre+'"',r.validation,r.statut,r.lien,'"'+r.commentaire+'"'].join(',');
+  }).join('\n');
+  const b=new Blob([h+rows],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='maxiconfort_lbc.csv';a.click();URL.revokeObjectURL(u);
+}
+</script>
+</body>
+</html>
