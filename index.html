@@ -1,4 +1,4 @@
-<!-- MAXICONFORT LBC v3.0 | 1234=admin 5678=collab 9012=provA 9013=provB -->
+<!-- MAXICONFORT LBC v3.0 -->
 <!DOCTYPE html>
 <html lang="fr" data-theme="light">
 <head>
@@ -21,6 +21,7 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);font-size:13px;li
 .ll{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;text-align:left;display:block;margin-bottom:7px;font-family:var(--m)}
 .li{width:100%;padding:14px;background:var(--sf2);border:2px solid var(--bd);border-radius:var(--r);color:var(--tx);font-size:22px;font-family:var(--m);outline:none;margin-bottom:14px;text-align:center;letter-spacing:10px;transition:border-color .2s}
 .li:focus{border-color:var(--ac)}
+.lim{font-size:15px;letter-spacing:normal;text-align:left}
 .lbtn{width:100%;padding:13px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;font-family:var(--f);cursor:pointer;transition:all .2s}
 .lbtn:hover{transform:translateY(-1px);box-shadow:0 8px 20px var(--gl)}
 .lerr{font-size:12px;color:var(--rd);margin-top:10px;display:none;font-family:var(--m);animation:shake .3s}
@@ -215,6 +216,27 @@ tr:hover td{background:var(--sf2)}
 }
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+.pubbtn{flex-shrink:0;background:var(--gl);color:var(--ac);border:1.5px solid rgba(59,130,246,.35);border-radius:7px;padding:7px 11px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:var(--f);transition:all .2s}
+.pubbtn:hover{background:var(--ac);color:#fff;border-color:var(--ac)}
+#pubov{display:none;position:fixed;inset:0;background:rgba(8,11,18,.78);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px}
+#pubbox{background:var(--sf);border:1.5px solid var(--bd2);border-radius:var(--rl);box-shadow:var(--sh);width:100%;max-width:560px;max-height:92vh;overflow-y:auto;padding:22px;animation:fin .25s ease}
+#pub-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+#pub-ti{font-size:16px;font-weight:800;letter-spacing:-.3px}
+#pub-meta{display:flex;flex-wrap:wrap;gap:7px;align-items:center;font-size:12px;color:var(--tx2);font-family:var(--m);margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)}
+#pub-meta b{color:var(--ac);font-size:15px}
+.publ{display:block;font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;font-family:var(--m);margin:0 0 7px}
+.pubhint{text-transform:none;letter-spacing:0;color:var(--tx3);font-weight:500;font-family:var(--f)}
+.pubinput,.pubarea{width:100%;background:var(--sf2);border:1.5px solid var(--bd);border-radius:var(--r);color:var(--tx);font-size:14px;font-family:var(--f);padding:11px 12px;outline:none}
+.pubinput{font-weight:700}
+.pubinput:focus,.pubarea:focus{border-color:var(--ac)}
+.pubarea{min-height:240px;line-height:1.5;white-space:pre-wrap;resize:vertical}
+.pubcopy{width:100%;background:var(--ac);color:#fff;border:none;border-radius:var(--r);padding:12px;font-size:14px;font-weight:800;cursor:pointer;margin:9px 0 18px;font-family:var(--f);transition:background .2s}
+.pubcopy:hover{background:var(--ac2)}
+.pubcopy.done{background:var(--gn)}
+.pubnote{font-size:11px;color:var(--tx2);background:var(--sf2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 12px;margin-bottom:16px;line-height:1.5}
+.pubnote b{color:var(--tx)}
+.pubpub{width:100%;background:var(--gn2);color:var(--gn);border:1.5px solid rgba(16,185,129,.4);border-radius:var(--r);padding:13px;font-size:14px;font-weight:800;cursor:pointer;font-family:var(--f);transition:all .2s}
+.pubpub:hover{background:var(--gn);color:#fff}
 </style>
 </head>
 <body>
@@ -223,9 +245,15 @@ tr:hover td{background:var(--sf2)}
     <div class="lic">MC</div>
     <div class="lt">Maxiconfort LBC</div>
     <div class="ls2">Gestionnaire publications v3</div>
-    <label class="ll">Code d'accès</label>
+    <div id="acc-fields">
+      <label class="ll">Email du compte</label>
+      <input class="li lim" id="email" type="email" placeholder="email@exemple.fr" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+      <label class="ll">Mot de passe</label>
+      <input class="li lim" id="pwd" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <label class="ll">Code d'accès (votre rôle)</label>
     <input class="li" id="pin" type="password" maxlength="4" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="off">
-    <button class="lbtn" onclick="doLogin()">Accéder →</button>
+    <button class="lbtn" id="lbtn" onclick="doLogin()">Accéder →</button>
     <div class="lerr" id="lerr">❌ Code incorrect</div>
     <div style="font-size:11px;color:var(--tx3);margin-top:14px;font-family:var(--m)">Contactez votre administrateur</div>
   </div>
@@ -384,7 +412,7 @@ tr:hover td{background:var(--sf2)}
       <div class="fgr"><label class="fl">Date *</label><input class="fi" id="adate" type="date"></div>
       <div class="fgr"><label class="fl">Heure</label><select class="fi" id="aheure"><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option selected>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option><option>19:00</option><option>20:00</option></select></div>
       <div class="fgr"><label class="fl">Produit</label><select class="fi" id="aprod" onchange="autoFill()"><option value="">— Choisir —</option></select></div>
-      <div class="fgr"><label class="fl">Ou libre</label><input class="fi" id="alib" type="text" placeholder="ex: Canapé 3 places"></div>
+      <div class="fgr"><label class="fl">Ou libre</label><input class="fi" id="alib" type="text" placeholder="ex: Canapé convertible"></div>
       <div class="fgr"><label class="fl">Dimension</label><input class="fi" id="adim" type="text" placeholder="ex: 160x200"></div>
       <div class="fgr"><label class="fl">Prix TTC € *</label><input class="fi" id="aprix" type="number" placeholder="299"></div>
       <div class="fgr"><label class="fl">Priorité</label><select class="fi" id="apri"><option value="Très haute">Très haute</option><option value="Haute" selected>Haute</option><option value="Moyenne">Moyenne</option></select></div>
@@ -404,6 +432,20 @@ tr:hover td{background:var(--sf2)}
 </div>
 </div>
 <div id="ld"><div class="spin"></div><p id="ld-msg">Chargement...</p></div>
+<div id="pubov" onclick="if(event.target===this)closePublier()">
+  <div id="pubbox">
+    <div id="pub-hd"><span id="pub-ti">Publier l'annonce</span><button class="icb" onclick="closePublier()" title="Fermer" style="width:30px;height:30px;font-size:16px">✕</button></div>
+    <div id="pub-meta"></div>
+    <label class="publ">Titre <span class="pubhint">— colle-le dans le champ « Titre » de Leboncoin</span></label>
+    <input id="pub-titre" class="pubinput" readonly onclick="this.select()">
+    <button class="pubcopy" id="pub-cti" onclick="pubCopy('pub-titre',this)">Copier le titre</button>
+    <label class="publ">Description <span class="pubhint">— colle-la dans le champ « Description »</span></label>
+    <textarea id="pub-desc" class="pubarea" readonly onclick="this.select()"></textarea>
+    <button class="pubcopy" id="pub-cde" onclick="pubCopy('pub-desc',this)">Copier la description</button>
+    <div class="pubnote">📷 Ajoute tes photos · Catégorie Leboncoin : <b>Maison &gt; Ameublement / Literie</b></div>
+    <div id="pub-actions"></div>
+  </div>
+</div>
 <div id="toast"><div class="toast-t" id="toast-t"></div><div class="toast-b" id="toast-b"></div></div>
 <script>
 // ══════════════════════════════════════════════
@@ -411,19 +453,30 @@ tr:hover td{background:var(--sf2)}
 // ══════════════════════════════════════════════
 const PINS = {'1234':'admin','5678':'collab','9012':'provA','9013':'provB'};
 const SB = 'https://jmvfjtnmebstkzcfnlgp.supabase.co';
-const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptdmZqdG5tZWJzdGt6Y2ZubGdwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODc5NjE4NiwiZXhwIjoyMDk0MzcyMTg2fQ.qHECB0bMYpwzeP3nlXZ4vX2lucHE1V9I_997WFGt_Og';
+// Clé ANON (publique par conception). La sécurité réelle = Supabase Auth (login) + RLS côté serveur.
+const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptdmZqdG5tZWJzdGt6Y2ZubGdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTYxODYsImV4cCI6MjA5NDM3MjE4Nn0.t_zyGmY96wUB_hk63WOSYZniBy_9oHwfpDvcxwl2s5U';
 
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
-let ROLE=null,RECS=[],PRODS=[],CUR=null,WOFF=0,ZONE='all',CAT_F='all',FIDS=[],SYNC_T=null,LAST_SYNC=null,SYNCING=false;
+let ROLE=null,TOKEN=null,RTOKEN=null,RECS=[],PRODS=[],CUR=null,WOFF=0,ZONE='all',CAT_F='all',FIDS=[],SYNC_T=null,LAST_SYNC=null,SYNCING=false;
 
 // ══════════════════════════════════════════════
 // SUPABASE
 // ══════════════════════════════════════════════
-const sbH=(x={})=>({'Content-Type':'application/json','apikey':SK,'Authorization':'Bearer '+SK,'Prefer':'return=minimal',...x});
+const sbH=(x={})=>({'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+(TOKEN||ANON),'Prefer':'return=minimal',...x});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function sbGet(t,p=''){const r=await fetch(`${SB}/rest/v1/${t}?${p}`,{headers:sbH()});if(!r.ok)throw new Error(await r.text());return r.json();}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function safeUrl(u){u=String(u==null?'':u).trim();return /^https?:\/\//i.test(u)?u:'';}
+function syncErr(e){setSync('⚠ Non synchronisé','err');showToast('⚠ Non synchronisé',"La modification n'est pas enregistrée en ligne",'am');console.warn('Sync error:',e&&e.message);}
+async function sbFetch(t,{method='GET',q='',body=null,extra={}}={}){
+  const url=`${SB}/rest/v1/${t}${q?('?'+q):''}`;
+  const go=()=>fetch(url,{method,headers:sbH(extra),...(body!=null?{body:JSON.stringify(body)}:{})});
+  let r=await go();
+  if(r.status===401&&RTOKEN){if(await authRefresh())r=await go();}
+  return r;
+}
+async function sbGet(t,p=''){const r=await sbFetch(t,{q:p});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function sbUpsert(t,data){
   const rows=Array.isArray(data)?data:[data];
   for(let i=0;i<rows.length;i+=50){
@@ -431,14 +484,14 @@ async function sbUpsert(t,data){
     let ok=false;
     for(let att=0;att<3&&!ok;att++){
       try{
-        const r=await fetch(`${SB}/rest/v1/${t}`,{method:'POST',headers:sbH({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(batch)});
+        const r=await sbFetch(t,{method:'POST',extra:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:batch});
         if(r.ok){ok=true;}else{const e=await r.text();if(att===2)throw new Error(e);await sleep(300);}
       }catch(e){if(att===2)throw e;await sleep(300);}
     }
   }
 }
-async function sbPatch(t,id,data){const r=await fetch(`${SB}/rest/v1/${t}?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:sbH(),body:JSON.stringify(data)});if(!r.ok)throw new Error(await r.text());}
-async function sbDelete(t,id){const r=await fetch(`${SB}/rest/v1/${t}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:sbH()});if(!r.ok)throw new Error(await r.text());}
+async function sbPatch(t,id,data){const r=await sbFetch(t,{method:'PATCH',q:`id=eq.${encodeURIComponent(id)}`,body:data});if(!r.ok)throw new Error(await r.text());}
+async function sbDelete(t,id){const r=await sbFetch(t,{method:'DELETE',q:`id=eq.${encodeURIComponent(id)}`});if(!r.ok)throw new Error(await r.text());}
 
 // ══════════════════════════════════════════════
 // LOCAL STORAGE
@@ -449,15 +502,58 @@ function loadLocal(){try{const s=localStorage.getItem('mc_recs');if(s){const p=J
 // ══════════════════════════════════════════════
 // AUTH — CHAQUE RÔLE EST STRICTEMENT SÉPARÉ
 // ══════════════════════════════════════════════
-function doLogin(){
+// ── Session Supabase (compte partagé), persistée en localStorage ──
+function saveSession(){try{localStorage.setItem('mc_session',JSON.stringify({t:TOKEN,r:RTOKEN}));}catch(e){}}
+function loadSession(){try{const s=localStorage.getItem('mc_session');if(s){const p=JSON.parse(s);TOKEN=p.t||null;RTOKEN=p.r||null;}}catch(e){}}
+function clearSession(){TOKEN=null;RTOKEN=null;try{localStorage.removeItem('mc_session');}catch(e){}}
+function jwtExp(t){try{return JSON.parse(atob(t.split('.')[1])).exp*1000;}catch(e){return 0;}}
+async function authSignIn(email,password){
+  const r=await fetch(`${SB}/auth/v1/token?grant_type=password`,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON},body:JSON.stringify({email,password})});
+  if(!r.ok)throw new Error('login');
+  const d=await r.json();TOKEN=d.access_token;RTOKEN=d.refresh_token;saveSession();return true;
+}
+async function authRefresh(){
+  if(!RTOKEN)return false;
+  const r=await fetch(`${SB}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON},body:JSON.stringify({refresh_token:RTOKEN})});
+  if(!r.ok){clearSession();return false;}
+  const d=await r.json();TOKEN=d.access_token;RTOKEN=d.refresh_token;saveSession();return true;
+}
+async function ensureAuth(){
+  if(TOKEN&&jwtExp(TOKEN)>Date.now()+30000)return true;
+  if(RTOKEN)return await authRefresh();
+  return false;
+}
+function showLErr(msg){const e=document.getElementById('lerr');e.textContent=msg;e.style.display='block';}
+function revealAccFields(){const a=document.getElementById('acc-fields');if(a)a.style.display='block';}
+// Au chargement : si une session existe, n'afficher que le PIN ; sinon demander email + mot de passe.
+function initLogin(){
+  loadSession();
+  const a=document.getElementById('acc-fields');
+  if(TOKEN||RTOKEN){if(a)a.style.display='none';const p=document.getElementById('pin');if(p)p.focus();}
+  else{if(a)a.style.display='block';const em=document.getElementById('email');if(em)em.focus();}
+}
+
+async function doLogin(){
   const pin=document.getElementById('pin').value.trim();
   const role=PINS[pin];
-  if(!role){
-    document.getElementById('lerr').style.display='block';
-    document.getElementById('pin').value='';
-    return;
+  if(!role){showLErr('❌ Code incorrect');document.getElementById('pin').value='';return;}
+  const btn=document.getElementById('lbtn');
+  if(TOKEN||RTOKEN){
+    btn.disabled=true;btn.textContent='Connexion…';
+    const ok=await ensureAuth();
+    btn.disabled=false;btn.textContent='Accéder →';
+    if(!ok){clearSession();revealAccFields();showLErr('❌ Session expirée — entrez email et mot de passe');return;}
+  }else{
+    const email=document.getElementById('email').value.trim();
+    const pwd=document.getElementById('pwd').value;
+    if(!email||!pwd){showLErr('❌ Email et mot de passe requis');return;}
+    btn.disabled=true;btn.textContent='Connexion…';
+    try{await authSignIn(email,pwd);}
+    catch(e){showLErr('❌ Email ou mot de passe incorrect');btn.disabled=false;btn.textContent='Accéder →';return;}
+    btn.disabled=false;btn.textContent='Accéder →';
   }
   ROLE=role;
+  document.getElementById('lerr').style.display='none';
   // Vider le localStorage pour forcer rechargement depuis Supabase
   try{localStorage.removeItem('mc_recs');}catch(e){}
   document.getElementById('ls').style.display='none';
@@ -465,10 +561,12 @@ function doLogin(){
   applyRole();
   init();
 }
+// Déconnexion douce : on garde la session Supabase de l'appareil, on revient à l'écran PIN.
 function doLogout(){
   ROLE=null;
   document.getElementById('pin').value='';
   document.getElementById('lerr').style.display='none';
+  const a=document.getElementById('acc-fields');if(a)a.style.display=(TOKEN||RTOKEN)?'none':'block';
   document.getElementById('ls').style.display='flex';
   document.getElementById('app').style.display='none';
   if(SYNC_T)clearInterval(SYNC_T);
@@ -817,23 +915,23 @@ function renderTable(){
     return `<tr style="${isOn?'background:color-mix(in srgb,var(--gn2) 60%,transparent)':isBlq?'background:color-mix(in srgb,var(--rd2) 60%,transparent)':''}">
       <td style="font-family:var(--m);font-size:10px;color:var(--tx3)">${r.id.split('-').slice(-1)[0]}</td>
       <td style="font-family:var(--m);font-size:12px;font-weight:600;color:var(--tx2)">${r.heure}</td>
-      <td style="font-weight:700;font-size:13px">${r.ville}</td>
+      <td style="font-weight:700;font-size:13px">${esc(r.ville)}</td>
       ${dC}
-      <td style="font-size:12px;font-weight:500">${r.produit}</td>
-      <td style="font-size:11px;color:var(--tx3);font-family:var(--m)">${r.dim}</td>
+      <td style="font-size:12px;font-weight:500">${esc(r.produit)}</td>
+      <td style="font-size:11px;color:var(--tx3);font-family:var(--m)">${esc(r.dim)}</td>
       <td style="padding:4px 7px">${isAdmin()?`<input class="ci pi" type="number" value="${r.prix}" min="1" style="width:63px;font-size:13px;font-weight:800;text-align:right" onchange="patchPrix('${r.id}',this.value)">`:
       `<span style="font-weight:800;font-size:13px;color:var(--ac);font-family:var(--m)">${r.prix}€</span>`}</td>
       ${mgC}
       <td><span class="bdg ${pb}">${r.priorite==='Très haute'?'⚡':r.priorite==='Haute'?'↑':'·'} ${r.priorite}</span></td>
-      <td><div style="display:flex;align-items:flex-start;gap:4px"><div style="flex:1;min-width:0"><div class="tm" title="${r.titre}" style="max-width:150px">${r.titre}</div><div class="ts"><span>${r.photo}</span><span>${r.texte}</span></div></div>
-        <button class="icb copy" onclick="copyTitre('${r.id}')" title="Copier titre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+      <td><div style="display:flex;align-items:flex-start;gap:6px"><div style="flex:1;min-width:0"><div class="tm" title="${esc(r.titre)}" style="max-width:190px;user-select:text;cursor:text">${esc(r.titre)}</div><div class="ts"><span>${r.photo}</span><span>${r.texte}</span></div></div>
+        <button class="pubbtn" onclick="openPublier('${r.id}')" title="Voir et copier le titre + la description à publier">Publier ▸</button>
       </div></td>
       <td style="text-align:center"><div class="twrap">
         <button class="tog ${isOn?'on':'off'}" onclick="toggleVal('${r.id}')" title="${isOn?'ON — cliquer pour OFF':'OFF — cliquer pour ON'}"></button>
         <span class="bdg ${vs}" style="font-size:9px">${isBlq?'BLOQUÉ':isOn?'✓ ON':'OFF'}</span>
       </div></td>
-      <td><input class="ci" type="text" value="${r.lien||''}" placeholder="Lien LBC..." onchange="pF('${r.id}','lien',this.value)"></td>
-      <td><input class="ci" type="text" value="${r.commentaire||''}" placeholder="Note..." onchange="pF('${r.id}','commentaire',this.value)"></td>
+      <td><div style="display:flex;align-items:center;gap:3px"><input class="ci" type="text" value="${esc(r.lien)}" placeholder="Lien LBC..." onchange="pF('${r.id}','lien',this.value)">${safeUrl(r.lien)?`<a class="icb copy" href="${esc(safeUrl(r.lien))}" target="_blank" rel="noopener" title="Ouvrir l'annonce sur Leboncoin" style="text-decoration:none;font-size:14px">↗</a>`:''}</div></td>
+      <td><input class="ci" type="text" value="${esc(r.commentaire)}" placeholder="Note..." onchange="pF('${r.id}','commentaire',this.value)"></td>
       <td>${r.custom?`<button class="icb" onclick="delAnn('${r.id}')" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a1 1 0 011-1h2a1 1 0 011 1v2"/></svg></button>`:''}</td>
     </tr>`;
   }).join('');
@@ -858,12 +956,12 @@ async function toggleVal(id){
 async function pF(id,key,val){
   const r=RECS.find(x=>x.id===id);if(!r)return;
   r[key]=val;r.updated_at=new Date().toISOString();saveLocal();
-  try{await sbPatch('lbc_annonces',id,{[key]:val,updated_at:r.updated_at});}catch(e){}
+  try{await sbPatch('lbc_annonces',id,{[key]:val,updated_at:r.updated_at});}catch(e){syncErr(e);}
 }
 async function patchPrix(id,val){
   const r=RECS.find(x=>x.id===id);if(!r)return;
   r.prix=String(val);r.updated_at=new Date().toISOString();saveLocal();
-  try{await sbPatch('lbc_annonces',id,{prix:String(val),updated_at:r.updated_at});}catch(e){}
+  try{await sbPatch('lbc_annonces',id,{prix:String(val),updated_at:r.updated_at});}catch(e){syncErr(e);}
 }
 async function bulkVal(on){
   FIDS.forEach(id=>{const r=RECS.find(x=>x.id===id);if(r){r.validation=on?'ON':'OFF';r.statut=on?'Validée':'À publier';r.updated_at=new Date().toISOString();}});
@@ -875,12 +973,12 @@ async function bulkVal(on){
 async function bulkBlq(){
   FIDS.forEach(id=>{const r=RECS.find(x=>x.id===id);if(r){r.statut='Bloqué';r.validation='OFF';r.updated_at=new Date().toISOString();}});
   saveLocal();renderTable();updateStats();renderCal();
-  try{await sbUpsert('lbc_annonces',RECS.filter(r=>FIDS.includes(r.id)));}catch(e){}
+  try{await sbUpsert('lbc_annonces',RECS.filter(r=>FIDS.includes(r.id)));}catch(e){syncErr(e);}
 }
 async function delAnn(id){
   if(!confirm('Supprimer cette annonce ?'))return;
   RECS=RECS.filter(r=>r.id!==id);saveLocal();renderTable();updateStats();renderCal();
-  try{await sbDelete('lbc_annonces',id);}catch(e){}
+  try{await sbDelete('lbc_annonces',id);}catch(e){syncErr(e);}
 }
 function resetF(){document.getElementById('srch').value='';document.getElementById('fst').value='';document.getElementById('fpri').value='';if(CUR)renderTable();}
 function copyTitre(id){
@@ -889,6 +987,35 @@ function copyTitre(id){
     const ta=document.createElement('textarea');ta.value=r.titre;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('📋 Titre copié !',r.titre.substring(0,55)+'...');
   });
 }
+function copyDesc(id){
+  const r=RECS.find(x=>x.id===id);if(!r)return;
+  const txt=genDescription(r);
+  const ok=()=>showToast('📋 Description copiée !','Collez-la dans le champ description Leboncoin');
+  navigator.clipboard.writeText(txt).then(ok).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();
+  });
+}
+function openPublier(id){
+  const r=RECS.find(x=>x.id===id);if(!r)return;
+  document.getElementById('pub-ti').textContent='Publier — '+r.ville;
+  document.getElementById('pub-meta').innerHTML=`<span>${esc(r.produit)}</span><span>·</span><span>${esc(r.dim)}</span><span>·</span><b>${esc(r.prix)} €</b>`;
+  document.getElementById('pub-titre').value=r.titre;
+  document.getElementById('pub-desc').value=genDescription(r);
+  document.getElementById('pub-cti').textContent='Copier le titre';
+  document.getElementById('pub-cde').textContent='Copier la description';
+  document.querySelectorAll('#pubbox .pubcopy').forEach(b=>b.classList.remove('done'));
+  document.getElementById('pub-actions').innerHTML=r.validation==='ON'
+    ?'<div style="text-align:center;color:var(--gn);font-weight:700;font-size:13px;padding:8px">✓ Déjà marquée comme publiée</div>'
+    :`<button class="pubpub" onclick="toggleVal('${r.id}');closePublier();">✓ J'ai publié — marquer ON</button>`;
+  document.getElementById('pubov').style.display='flex';
+}
+function closePublier(){document.getElementById('pubov').style.display='none';}
+function pubCopy(elId,btn){
+  const el=document.getElementById(elId);el.focus();el.select();
+  const label=btn.textContent;
+  const done=()=>{btn.textContent='✓ Copié !';btn.classList.add('done');setTimeout(()=>{btn.textContent=label;btn.classList.remove('done');},1500);};
+  navigator.clipboard.writeText(el.value).then(done).catch(()=>{try{document.execCommand('copy');done();}catch(e){}});
+}
 // ══════════════════════════════════════════════
 // GÉNÉRATEUR
 // ══════════════════════════════════════════════
@@ -896,8 +1023,144 @@ const VILLES_IDF={'75':['Paris 1er','Paris 2e','Paris 3e','Paris 4e','Paris 5e',
 const VILLES_PROV={'Lyon':['Lyon 1er','Lyon 2e','Lyon 3e','Lyon 4e','Lyon 5e','Lyon 6e','Lyon 7e','Lyon 8e','Lyon 9e','Villeurbanne','Venissieux','Bron'],'Marseille':['Marseille 1er','Marseille 2e','Marseille 3e','Marseille 4e','Marseille 5e','Marseille 6e','Marseille 7e','Marseille 8e','Marseille 9e','Marseille 10e','Marseille 13e'],'Toulouse':['Toulouse','Blagnac','Colomiers','Tournefeuille','Balma','Cugnaux','Muret'],'Bordeaux':['Bordeaux','Merignac','Pessac','Talence','Begles','Gradignan','Le Bouscat'],'Nantes':['Nantes','Saint-Herblain','Reze','Orvault','Bouguenais','Vertou'],'Nice':['Nice','Antibes','Cannes','Grasse','Cagnes-sur-Mer','Menton','Mougins'],'Montpellier':['Montpellier','Lattes','Castelnau-le-Lez','Sete','Beziers'],'Strasbourg':['Strasbourg','Schiltigheim','Illkirch-Graffenstaden','Haguenau','Colmar','Mulhouse'],'Lille':['Lille','Roubaix','Tourcoing','Villeneuve-Ascq','Wattrelos','Marcq-en-Baroeul'],'Rennes':['Rennes','Cesson-Sevigne','Bruz','Pace'],'Grenoble':['Grenoble','Echirolles','Meylan','Fontaine','Voiron'],'Toulon':['Toulon','La Seyne-sur-Mer','Hyeres','Six-Fours-les-Plages'],'Aix-en-Provence':['Aix-en-Provence','Gardanne','Aubagne','Vitrolles','Marignane'],'Nimes':['Nimes','Ales','Orange','Avignon','Carpentras'],'Nancy':['Nancy','Metz','Thionville'],'Dijon':['Dijon','Beaune','Chalon-sur-Saone','Macon'],'Reims':['Reims','Epernay','Troyes'],'Tours':['Tours','Blois','Orleans','Chartres'],'Angers':['Angers','Cholet','Saumur'],'Pau':['Pau','Bayonne','Biarritz','Anglet','Tarbes'],'Caen':['Caen','Rouen','Le Havre'],'Brest':['Brest','Quimper','Lorient','Vannes'],'Besancon':['Besancon','Montbeliard','Belfort'],'Clermont-Ferrand':['Clermont-Ferrand','Riom','Vichy'],'Limoges':['Limoges','Perigueux','Brive-la-Gaillarde']};
 const PHOTOS=['Photo A','Photo B','Photo C','Photo D','Photo E','Photo F','Photo G','Photo H'];
 const TEXTES=['Texte A','Texte B','Texte C','Texte D','Texte E','Texte F'];
-const T_IDF=[(p,d,v)=>`${p} ${d} neuf livraison gratuite ${v}`,(p,d,v)=>`${p} ${d} disponible rapidement ${v}`,(p,d,v)=>`${p} ${d} direct usine secteur ${v}`,(p,d,v)=>`Promo ${p} ${d} livraison IDF ${v}`,(p,d,v)=>`${p} ${d} Maxiconfort stock dispo ${v}`,(p,d,v)=>`Literie neuve ${d} ${p} ${v}`];
-const T_PROV=[(p,d,v)=>`${p} ${d} livraison rapide ${v}`,(p,d,v)=>`${p} ${d} neuf livre chez vous ${v}`,(p,d,v)=>`${p} ${d} livraison France entiere ${v}`,(p,d,v)=>`Promo ${p} ${d} livraison domicile ${v}`,(p,d,v)=>`${p} ${d} Maxiconfort livraison ${v}`,(p,d,v)=>`${p} ${d} direct fabricant ${v}`];
+// ── Générateur de contenu UNIQUE (titres + descriptions) ──
+// PRNG déterministe : même id => même contenu (stable), mais varié d'une annonce à l'autre.
+function seedRand(str){str=String(str);let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return function(){h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);h^=h>>>16;return (h>>>0)/4294967296;};}
+const _pick=(rng,a)=>a[Math.floor(rng()*a.length)];
+const ACCROCHES=['Neuf','Promo','Déstockage','Arrivage','Offre','Bon plan','À saisir','Nouveau','Top affaire','Liquidation','Exclusif','Fin de série'];
+const BENEFS_IDF=['livraison rapide','livraison offerte','dispo immédiate','stock dispo','direct entrepôt','qualité garantie','prix direct','installation possible'];
+const BENEFS_PROV=['livraison France entière','livré chez vous','expédition rapide','direct fabricant','partout en France','colis suivi','livraison à domicile'];
+const FINS=['à ne pas manquer','pour tout budget','idéal chambre','confort garanti','neuf sous emballage','jamais utilisé','qualité pro','meilleur rapport qualité-prix'];
+function genTitre(nom,dim,ville,isPr,seed){
+  const rng=seedRand(seed||(nom+'|'+dim+'|'+ville));
+  const b=isPr?BENEFS_PROV:BENEFS_IDF;
+  const S=[
+    ()=>`${nom} ${dim} ${_pick(rng,b)} ${ville}`,
+    ()=>`${_pick(rng,ACCROCHES)} ${nom} ${dim} ${ville}`,
+    ()=>`${nom} ${dim} neuf ${_pick(rng,b)} ${ville}`,
+    ()=>`${nom} ${dim} ${ville} ${_pick(rng,FINS)}`,
+    ()=>`${_pick(rng,ACCROCHES)} ${nom} ${dim} ${_pick(rng,b)}`,
+    ()=>`${nom} ${dim} Maxiconfort ${_pick(rng,b)} ${ville}`,
+    ()=>`${nom} ${dim} ${_pick(rng,FINS)} ${ville}`,
+  ];
+  let t=_pick(rng,S)().replace(/\s+/g,' ').trim();
+  if(t.length>80){t=t.slice(0,80);const sp=t.lastIndexOf(' ');if(sp>40)t=t.slice(0,sp);}
+  return t;
+}
+function parseDim(dim){
+  dim=String(dim||'');
+  const o={w:null,l:null,thick:null,couch:[],canape:/place/i.test(dim)};
+  const pairs=dim.match(/(\d{2,3})\s*[x×]\s*(\d{2,3})/g)||[];
+  pairs.forEach(p=>{const m=p.match(/(\d{2,3})\s*[x×]\s*(\d{2,3})/);o.couch.push(m[1]+' x '+m[2]+' cm');});
+  if(pairs.length){const m=pairs[0].match(/(\d{2,3})\s*[x×]\s*(\d{2,3})/);o.w=+m[1];o.l=+m[2];}
+  const tm=dim.match(/(\d{1,2})\s*cm/i);if(tm)o.thick=+tm[1];
+  return o;
+}
+function _persons(w){if(!w)return '';if(w<=100)return '1 personne';if(w<140)return '1 à 2 personnes';if(w<160)return '2 personnes';return '2 personnes, grande largeur';}
+function genDescription(r){
+  const rng=seedRand(r.id||(r.produit+r.ville));
+  const isPr=r.dept==='PROV';
+  const name=String(r.produit||''),ln=name.toLowerCase();
+  const d=parseDim(r.dim);
+  let thick=d.thick;if(!thick){const tm=ln.match(/(\d{1,2})\s*cm/);if(tm)thick=+tm[1];}
+  let kind='matelas';
+  if(/ensemble|pack/.test(ln))kind='ensemble';
+  else if(/coffre/.test(ln))kind='coffre';
+  else if(/nico/.test(ln))kind='nico';
+  else if(/superpos/.test(ln))kind='superpose';
+  else if(/canap/.test(ln))kind='canape';
+  else if(/sommier/.test(ln))kind='sommier';
+  else if(/matelas/.test(ln))kind='matelas';
+  const ferme=(/ferme|soutien/.test(ln))?'ferme (bon soutien dorsal)':(thick>=20?'ferme avec accueil moelleux':'mémoire de forme, accueil souple');
+  const coul=/noir/.test(ln)?'noir':(/blanc/.test(ln)?'blanc':(/gris/.test(ln)?'gris':''));
+  const dimTxt=d.couch.length?d.couch.join(' + '):'',pers=_persons(d.w),dimP=dimTxt+(pers?' ('+pers+')':'');
+  const B=[],add=(k,v)=>{if(v)B.push('• '+k+' : '+v);};
+  let ben;
+  if(kind==='ensemble'){
+    add('Type','ensemble matelas + sommier (literie complète)');
+    add('Dimensions',dimP);
+    add('Épaisseur matelas',thick?thick+' cm':'');
+    add('Matelas','mousse à mémoire de forme haute densité');
+    add('Sommier','bois massif, lattes multiplis haute résistance');
+    add('Certification','matelas OEKO-TEX Standard 100');
+    add('Garantie','2 ans (garantie légale de conformité)');
+    add('État','neuf, sous emballage');
+    ben=['Mémoire de forme adaptative : la mousse épouse vos courbes et aligne la colonne.','Indépendance de couchage : plus de réveils quand votre partenaire bouge.','Lattes multiplis souples : ventilent le matelas et épousent vos mouvements.','Certifié OEKO-TEX Standard 100 : aucune substance nocive, sommeil sain.','Structure en bois massif robuste, montage simple.'];
+  }else if(kind==='coffre'){
+    add('Type','lit coffre avec rangement intégré');
+    add('Dimensions couchage',dimP);
+    add('Revêtement','cuir PU premium'+(coul?' '+coul:''));
+    add('Sommier','à lattes inclus');
+    add('Rangement','grand coffre sous le sommier');
+    add('Matelas','non inclus');
+    add('Garantie','2 ans (garantie légale de conformité)');
+    add('État','neuf, emballé');
+    ben=['Grand coffre de rangement sous le sommier : un gain de place précieux.','Contour cuir PU premium : finition haut de gamme qui valorise la chambre.','Idéal petits espaces : rangez couettes, oreillers et linge de lit.','Sommier à lattes inclus : bon soutien et ventilation.'];
+  }else if(kind==='nico'){
+    add('Type','cadre de lit Nico');
+    add('Dimensions couchage',dimP);
+    add('Revêtement','simili cuir'+(coul?' '+coul:''));
+    add('Garantie','2 ans (garantie légale de conformité)');
+    add('État','neuf, emballé');
+    ben=['Design élégant et chaleureux pour votre chambre.','Structure solide, montage simple.','Revêtement simili cuir facile à entretenir.'];
+  }else if(kind==='superpose'){
+    add('Type','lit superposé (gain de place)');
+    add('Couchages',dimTxt||'90 x 190 cm');
+    add('Structure','métal, acier renforcé');
+    add('Sécurité','barrières de protection + échelle robuste');
+    add('Garantie','2 ans (garantie légale de conformité)');
+    add('État','neuf, emballé');
+    ben=['Structure métal en acier renforcé : durabilité maximale, design moderne.','Sécurité enfants : barrières de protection sur le couchage supérieur.','Échelle robuste : accès facile et sécurisé à l\'étage.','Gain de place : idéal chambres d\'enfants et petits espaces.'];
+  }else if(kind==='canape'){
+    add('Type','canapé d\'angle convertible, réversible');
+    add('Couchage','convertible (couchage d\'appoint)');
+    add('Rangement','grand coffre avec vérins, sous la méridienne');
+    add('Configuration','angle réversible (méridienne à droite ou à gauche)');
+    add('Revêtement','microfibre');
+    add('Garantie','2 ans (garantie légale de conformité)');
+    add('État','neuf, emballé');
+    ben=['Angle réversible : placez la méridienne à droite ou à gauche selon votre pièce.','Convertible : se transforme en couchage d\'appoint pour vos invités.','Grand coffre avec vérins sous la méridienne : idéal pour couettes et linge de lit.','Revêtement microfibre doux et résistant.','Design moderne et confort généreux.'];
+  }else if(kind==='sommier'){
+    add('Type','sommier bois à lattes');
+    add('Dimensions',dimP);
+    add('Structure','bois massif');
+    add('Lattes','multiplis flexibles haute résistance');
+    add('Contour','cuir PU premium');
+    add('Pieds','20 cm, livrés avec le sommier');
+    add('Compatibilité','tous types de matelas (mémoire, mousse, ressorts, latex)');
+    add('Garantie','2 ans (garantie légale de conformité)');
+    add('État','neuf, sous emballage');
+    ben=['Lattes multiplis souples : soutien sur-mesure et ventilation du matelas.','Bois massif renforcé : structure robuste, sans grincement.','Pieds 20 cm : rangement facile sous le lit, allure aérée.','Compatible tous matelas : mémoire de forme, mousse, ressorts, latex.'];
+  }else{
+    add('Type','matelas mémoire de forme');
+    add('Dimensions',dimP);
+    add('Épaisseur',thick?thick+' cm':'');
+    add('Technologie','mousse à mémoire de forme haute densité');
+    add('Fermeté',ferme);
+    add('Certification','OEKO-TEX Standard 100');
+    add('Garantie','2 ans (garantie légale de conformité)');
+    add('État','neuf, sous emballage');
+    ben=['Mémoire de forme adaptative : la mousse épouse vos courbes et aligne la colonne.','Indépendance de couchage : plus de réveils quand votre partenaire bouge.','Régulation thermique : limite la chaleur et la transpiration nocturne.','Anti-acariens et hypoallergénique : idéal pour les personnes sensibles.','Certifié OEKO-TEX Standard 100 : aucune substance nocive, sommeil sain.'];
+  }
+  const intro=[`${name} ${r.dim} — neuf, sous emballage.`,`${name}, ${r.dim}. Neuf, jamais servi.`,`Découvrez notre ${name} ${r.dim}, qualité Maxiconfort.`,`${name} ${r.dim} disponible immédiatement.`];
+  const liv=isPr
+    ?[`Livraison dans toute la France — ${r.ville} et alentours.`,`Expédition rapide partout en France, colis suivi.`,`Livré directement chez vous, où que vous soyez en France.`]
+    :[`Livraison rapide sur ${r.ville} et toute l'Île-de-France.`,`Livraison possible sur ${r.ville} et tout le secteur.`,`Dispo pour ${r.ville} et alentours — livraison express IDF.`];
+  const cta=["Contactez-nous pour toute information ou pour réserver.","Disponible dès maintenant — écrivez-nous.","Réservez le vôtre dès aujourd'hui.","Une question ? Écrivez-nous, réponse rapide."];
+  const b1=_pick(rng,ben),b2=_pick(rng,ben.filter(x=>x!==b1));
+  return [
+    _pick(rng,intro),'',
+    'CARACTÉRISTIQUES',
+    ...B,'',
+    b1,b2,'',
+    _pick(rng,liv),'',
+    `Prix : ${r.prix} € — prix direct, sans intermédiaire.`,'',
+    '✅ Garantie légale 2 ans  ·  ✅ 14 jours pour changer d\'avis  ·  vendeur professionnel Maxiconfort (Paris)',
+    '',
+    _pick(rng,cta),'',
+    'Maxiconfort — literie & mobilier neufs, expédié depuis Paris.'
+  ].join('\n');
+}
 
 function getProdPool(isPr,mode){
   let pool=isPr?PRODS.filter(p=>p.cat==='Matelas seul Province'):PRODS.filter(p=>p.cat!=='Matelas seul Province'&&p.prix>0);
@@ -908,28 +1171,28 @@ function getProdPool(isPr,mode){
   return pool;
 }
 function getVP(nb,isPr){
-  const map=isPr?VILLES_PROV:VILLES_IDF,zones=Object.keys(map),all=Object.values(map).flat();
-  let out=[],bz={};zones.forEach(z=>{bz[z]=map[z].slice();});
-  let zi=0;
-  while(out.length<nb){const z=zones[zi%zones.length];if(bz[z]&&bz[z].length>0)out.push({ville:bz[z].shift(),dept:isPr?'PROV':z});else out.push({ville:all[out.length%all.length],dept:isPr?'PROV':zones[0]});zi++;}
-  return out.slice(0,nb);
+  const map=isPr?VILLES_PROV:VILLES_IDF,zones=Object.keys(map);
+  const ptr={};zones.forEach(z=>ptr[z]=0);
+  const out=[];let zi=0;
+  while(out.length<nb){const z=zones[zi%zones.length];const list=map[z];const v=list[ptr[z]%list.length];ptr[z]++;out.push({ville:v,dept:isPr?'PROV':z,zone:z});zi++;}
+  return out;
 }
 function buildDay(ds,nb,st,en,mode,isPr){
   const interval=Math.floor((t2m(en)-t2m(st))/nb);
   const prefix=isPr?`PROV-${ds}-`:`IDF-${ds}-`;
   const pool=getProdPool(isPr,mode),villes=getVP(nb,isPr);
-  const titres=isPr?T_PROV:T_IDF,used=new Set(),out=[];
-  let pi=0,phi=0,txi=0,tii=0;
+  const used=new Set(),out=[];
+  let pi=0,phi=0,txi=0;
   for(let i=0;i<nb;i++){
-    const{ville,dept}=villes[i];
+    const{ville,dept,zone}=villes[i];
     const heure=m2t(t2m(st)+i*interval);
     const id=prefix+String(i+1).padStart(3,'0');
     let prod=null,tries=0;
-    while(tries<pool.length){const c=pool[(pi+tries)%pool.length];const k=`${ville}|${c.nom}|${c.dim}`;if(!used.has(k)){prod=c;used.add(k);pi=(pi+tries+1)%pool.length;break;}tries++;}
+    while(tries<pool.length){const c=pool[(pi+tries)%pool.length];const k=`${zone}|${c.ref||c.nom+c.dim}`;if(!used.has(k)){prod=c;used.add(k);pi=(pi+tries+1)%pool.length;break;}tries++;}
     if(!prod){prod=pool[pi%pool.length];pi=(pi+1)%pool.length;}
     const photo=PHOTOS[phi%PHOTOS.length];phi++;
     const texte=TEXTES[txi%TEXTES.length];txi++;
-    const titre=titres[tii%titres.length](prod.nom,prod.dim,ville);tii++;
+    const titre=genTitre(prod.nom,prod.dim,ville,isPr,id);
     const collabId=isPr?(i%2===0?'A':'B'):'';
     out.push({id,heure,ville,dept,date_pub:ds,produit:prod.nom,dim:prod.dim,prix:String(prod.prix),priorite:prod.priorite||'Haute',titre,photo,texte,ref:prod.ref||'',collab_id:collabId,validation:'OFF',statut:'À publier',lien:'',commentaire:'',custom:false,updated_at:new Date().toISOString()});
   }
@@ -1017,10 +1280,10 @@ function renderCatalogue(){
     return `<div class="pcat"><div class="pcl">${cat}</div><div class="pg">${ps.map(p=>`
       <div class="pc" id="pc-${p.id}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">
-          <div class="pn">${p.nom}</div>
+          <div class="pn">${esc(p.nom)}</div>
           ${(isAdmin()||isProv())?`<button class="icb" onclick="delProd('${p.id}')" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a1 1 0 011-1h2a1 1 0 011 1v2"/></svg></button>`:''}
         </div>
-        <div class="pm">${p.dim||'—'}${isAdmin()&&p.ref?' · '+p.ref:''}</div>
+        <div class="pm">${esc(p.dim)||'—'}${isAdmin()&&p.ref?' · '+esc(p.ref):''}</div>
         <div class="pf">
           ${isAdmin()?`<div style="display:flex;flex-direction:column;gap:3px;width:100%">
             <div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px">Prix</span><input class="ci" type="number" value="${p.prix}" min="1" style="width:65px;color:var(--ac);font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','prix',parseFloat(this.value))" title="Modifier le prix"><span style="color:var(--ac);font-weight:800">€</span></div>
@@ -1041,7 +1304,7 @@ async function updProd(id,key,val){
   catch(e){setSync('⚠ Erreur prix','err');}
 }
 function qPrix(id,cur){const v=prompt('Nouveau prix (€) :',cur);if(!v||isNaN(parseFloat(v)))return;updProd(id,'prix',parseFloat(v));}
-async function delProd(id){if(!confirm('Supprimer ce produit ?'))return;PRODS=PRODS.filter(p=>p.id!==id);buildProdSelect();renderCatalogue();try{await sbDelete('lbc_produits',id);}catch(e){}}
+async function delProd(id){if(!confirm('Supprimer ce produit ?'))return;PRODS=PRODS.filter(p=>p.id!==id);buildProdSelect();renderCatalogue();try{await sbDelete('lbc_produits',id);}catch(e){syncErr(e);}}
 function toggleAddProd(){const w=document.getElementById('apwrap'),b=document.getElementById('btn-addprod');const open=w.style.display==='block';w.style.display=open?'none':'block';b.textContent=open?'+ Produit':'✕ Fermer';b.className=open?'btn p':'btn d';}
 async function addProd(){
   const n=document.getElementById('apn').value.trim(),d=document.getElementById('apd').value.trim(),p=parseFloat(document.getElementById('app2').value)||0,m=parseFloat(document.getElementById('apm').value)||null,r=document.getElementById('apr').value.trim(),c=document.getElementById('apc').value,pri=document.getElementById('appri').value;
@@ -1049,7 +1312,7 @@ async function addProd(){
   const np={id:'P'+Date.now(),nom:n,dim:d,prix:p,marge:m,ref:r,cat:c,priorite:pri,updated_at:new Date().toISOString()};
   PRODS.push(np);buildProdSelect();renderCatalogue();
   const fl=document.getElementById('apfl');fl.textContent='✓ Produit ajouté : '+n;fl.style.display='block';setTimeout(()=>fl.style.display='none',3000);
-  clearAP();try{await sbUpsert('lbc_produits',[np]);}catch(e){}
+  clearAP();try{await sbUpsert('lbc_produits',[np]);}catch(e){syncErr(e);}
 }
 function clearAP(){['apn','apd','app2','apm','apr'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});}
 function buildProdSelect(){
@@ -1059,7 +1322,7 @@ function buildProdSelect(){
   vp.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.nom+(p.dim?' ('+p.dim+')':'')+' — '+p.prix+'€';sel.appendChild(o);});
 }
 function autoFill(){const id=document.getElementById('aprod').value;if(!id)return;const p=PRODS.find(x=>x.id===id);if(!p)return;document.getElementById('adim').value=p.dim||'';document.getElementById('aprix').value=p.prix||'';document.getElementById('alib').value='';autoTitre();}
-function autoTitre(){const v=document.getElementById('av').value.trim(),pid=document.getElementById('aprod').value,lib=document.getElementById('alib').value.trim(),d=document.getElementById('adim').value.trim();let n=lib;if(!n&&pid){const p=PRODS.find(x=>x.id===pid);if(p)n=p.nom;}if(!n&&!v)return;const pool=isProv()?T_PROV:T_IDF;document.getElementById('atitre').value=pool[Math.floor(Math.random()*pool.length)](n,d,v);}
+function autoTitre(){const v=document.getElementById('av').value.trim(),pid=document.getElementById('aprod').value,lib=document.getElementById('alib').value.trim(),d=document.getElementById('adim').value.trim();let n=lib;if(!n&&pid){const p=PRODS.find(x=>x.id===pid);if(p)n=p.nom;}if(!n&&!v)return;document.getElementById('atitre').value=genTitre(n,d,v,isProv(),'manual-'+Date.now());}
 async function addAnnonce(){
   const v=document.getElementById('av').value.trim(),ds=document.getElementById('adate').value,pid=document.getElementById('aprod').value,lib=document.getElementById('alib').value.trim(),prix=document.getElementById('aprix').value;
   if(!v||!ds||(!pid&&!lib)||!prix){showToast('⚠ Champs manquants','Ville, Date, Produit et Prix obligatoires','am');return;}
@@ -1069,10 +1332,10 @@ async function addAnnonce(){
   const note=document.getElementById('anote').value.trim(),photo=PHOTOS[Math.floor(Math.random()*PHOTOS.length)],texte=TEXTES[Math.floor(Math.random()*TEXTES.length)];
   const pr=PRODS.find(x=>x.id===pid)||PRODS.find(x=>x.nom===nom);
   const id='CUSTOM-'+Date.now();
-  const nr={id,heure,ville:v,dept,date_pub:ds,produit:nom,dim,prix:String(prix),priorite:pri,titre,photo,texte,ref:pr?.ref||'',collab_id:isProv()?'':'',validation:'OFF',statut:'À publier',lien:'',commentaire:note,custom:true,updated_at:new Date().toISOString()};
+  const nr={id,heure,ville:v,dept,date_pub:ds,produit:nom,dim,prix:String(prix),priorite:pri,titre,photo,texte,ref:pr?.ref||'',collab_id:isProvA()?'A':isProvB()?'B':'',validation:'OFF',statut:'À publier',lien:'',commentaire:note,custom:true,updated_at:new Date().toISOString()};
   RECS.push(nr);saveLocal();updateStats();renderCal();
   const fl=document.getElementById('afl');fl.textContent='✓ Annonce ajoutée — '+id;fl.style.display='block';setTimeout(()=>fl.style.display='none',3000);
-  clearAnnForm();try{await sbUpsert('lbc_annonces',[nr]);}catch(e){}
+  clearAnnForm();try{await sbUpsert('lbc_annonces',[nr]);}catch(e){syncErr(e);}
 }
 function clearAnnForm(){['av','adpt','adim','aprix','atitre','alib','anote'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});document.getElementById('aprod').value='';}
 
@@ -1123,10 +1386,8 @@ const BASE_PRODUCTS=[
 {nom:"Lit Nico - Noir 160x200",dim:"160x200",prix:349,marge:null,ref:"NICO-N-160",cat:"Lit Nico",priorite:"Haute"},
 {nom:"Lit Nico - Blanc 140x190",dim:"140x190",prix:299,marge:null,ref:"NICO-B-140",cat:"Lit Nico",priorite:"Haute"},
 {nom:"Lit Nico - Blanc 160x200",dim:"160x200",prix:349,marge:null,ref:"NICO-B-160",cat:"Lit Nico",priorite:"Haute"},
-{nom:"Lit Nico - Gris 140x190",dim:"140x190",prix:299,marge:null,ref:"NICO-G-140",cat:"Lit Nico",priorite:"Haute"},
-{nom:"Lit Nico - Gris 160x200",dim:"160x200",prix:349,marge:null,ref:"NICO-G-160",cat:"Lit Nico",priorite:"Haute"},
 {nom:"Lit superpose 2+1",dim:"140x190+90x190",prix:499,marge:null,ref:"SUP-2P1",cat:"Lit superposé",priorite:"Haute"},
-{nom:"Canape Cozy 3 places",dim:"3 places",prix:349,marge:null,ref:"CANAPE-3P",cat:"Canapé",priorite:"Moyenne"},
+{nom:"Canape Cozy 1.5 places",dim:"1.5 places",prix:349,marge:null,ref:"CANAPE-1.5P",cat:"Canapé",priorite:"Moyenne"},
 {nom:"Ensemble Province 90x190-15cm",dim:"90x190 - 15 cm",prix:179,marge:null,ref:"ENS-P-9019-15",cat:"Matelas seul Province",priorite:"Haute"},
 {nom:"Ensemble Province 90x190-20cm",dim:"90x190 - 20 cm",prix:199,marge:null,ref:"ENS-P-9019-20",cat:"Matelas seul Province",priorite:"Haute"},
 {nom:"Ensemble Province 90x200-15cm",dim:"90x200 - 15 cm",prix:189,marge:null,ref:"ENS-P-9020-15",cat:"Matelas seul Province",priorite:"Haute"},
@@ -1153,9 +1414,10 @@ const BASE_PRODUCTS=[
 {nom:"Lit Nico Noir 160x200 Province",dim:"160x200",prix:229,marge:null,ref:"NICO-P-N-160",cat:"Matelas seul Province",priorite:"Haute"},
 {nom:"Lit Nico Blanc 140x190 Province",dim:"140x190",prix:199,marge:null,ref:"NICO-P-B-140",cat:"Matelas seul Province",priorite:"Haute"},
 {nom:"Lit Nico Blanc 160x200 Province",dim:"160x200",prix:229,marge:null,ref:"NICO-P-B-160",cat:"Matelas seul Province",priorite:"Haute"},
-{nom:"Lit Nico Gris 140x190 Province",dim:"140x190",prix:199,marge:null,ref:"NICO-P-G-140",cat:"Matelas seul Province",priorite:"Haute"},
-{nom:"Lit Nico Gris 160x200 Province",dim:"160x200",prix:229,marge:null,ref:"NICO-P-G-160",cat:"Matelas seul Province",priorite:"Haute"},
 ];
+
+// Bootstrap de l'écran de connexion : restaure la session (PIN seul) ou demande email + mot de passe.
+initLogin();
 </script>
 </body>
 </html>
