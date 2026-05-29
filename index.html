@@ -453,8 +453,8 @@ tr:hover td{background:var(--sf2)}
 // ══════════════════════════════════════════════
 const PINS = {'1234':'admin','5678':'collab','9012':'provA','9013':'provB'};
 const SB = 'https://jmvfjtnmebstkzcfnlgp.supabase.co';
-// Clé ANON (publique par conception). La sécurité réelle = Supabase Auth (login) + RLS côté serveur.
-const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptdmZqdG5tZWJzdGt6Y2ZubGdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3OTYxODYsImV4cCI6MjA5NDM3MjE4Nn0.t_zyGmY96wUB_hk63WOSYZniBy_9oHwfpDvcxwl2s5U';
+// Clé PUBLISHABLE (publique par conception, remplace l'ancienne clé anon legacy). Sécurité réelle = Supabase Auth (login) + RLS côté serveur.
+const ANON = 'sb_publishable_cRPSD97LDH0beIID1Wecxw_xY7cEAeX';
 
 // ══════════════════════════════════════════════
 // STATE
