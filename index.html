@@ -1057,6 +1057,29 @@ function parseDim(dim){
   return o;
 }
 function _persons(w){if(!w)return '';if(w<=100)return '1 personne';if(w<140)return '1 à 2 personnes';if(w<160)return '2 personnes';return '2 personnes, grande largeur';}
+// ── Bloc catalogue / cross-sell GÉNÉRÉ (varié par annonce → évite le doublon LBC, garde le SEO) ──
+const _shuffle=(rng,arr)=>{const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;};
+const CAT_ITEMS=[
+  ['Ensembles matelas + sommier (literie complète)','Packs matelas + sommier prêts à dormir','Ensembles literie complets matelas + sommier'],
+  ['Matelas à mémoire de forme, toutes fermetés','Matelas mousse à mémoire de forme, toutes tailles','Matelas mémoire de forme, du souple au ferme'],
+  ['Sommiers tapissiers & à lattes','Sommiers à lattes et tapissiers','Sommiers (tapissiers et à lattes)'],
+  ['Lits coffre avec grand rangement intégré','Lits coffre avec rangement','Lits coffre, grand espace de rangement'],
+  ['Lits design en simili cuir (noir / blanc)','Cadres de lit design en simili cuir','Lits simili cuir, noir ou blanc'],
+  ['Lits superposés enfant','Lits superposés (gain de place)','Lits superposés pour chambre d\'enfant'],
+  ['Canapés d\'angle convertibles réversibles','Canapés convertibles d\'angle réversibles','Canapés d\'angle convertibles avec coffre']
+];
+const CAT_HEAD=['🛏️ TOUTE LA GAMME MAXICONFORT','🛏️ L\'UNIVERS MAXICONFORT','👉 DÉCOUVREZ AUSSI CHEZ MAXICONFORT','💡 BESOIN D\'ÉQUIPER TOUTE LA CHAMBRE ?','🛏️ TOUTE NOTRE LITERIE & MOBILIER'];
+const CAT_LEAD=['Literie & mobilier neufs, livrés rapidement :','Retrouvez tous nos produits neufs au meilleur prix :','Maxiconfort, c\'est aussi :','Notre gamme complète, neuve et garantie :'];
+const CAT_DIM=['📏 Toutes tailles : 90x190 → 180x200','📏 Dimensions 90x190 à 180x200','📏 Du 90x190 au 180x200, toutes tailles'];
+const CAT_END=['Une autre taille ou un autre modèle ? Écrivez-nous !','Faites-nous votre liste, on vous fait un prix sur l\'ensemble 👍','Dites-nous ce qu\'il vous faut, on a sûrement votre bonheur.','Besoin d\'un modèle précis ? Contactez-nous, réponse rapide.'];
+function genCatalog(rng){
+  const items=_shuffle(rng,CAT_ITEMS).map(v=>_pick(rng,v));
+  const head=_pick(rng,CAT_HEAD),lead=_pick(rng,CAT_LEAD),dim=_pick(rng,CAT_DIM),end=_pick(rng,CAT_END);
+  const trust=_pick(rng,['✅ Tout neuf, sous emballage','✅ Neuf · Stock disponible','✅ Articles neufs, dispo immédiate']);
+  const sep='━━━━━━━━━━━━━━━━━━━━━━';
+  if(rng()<0.5)return [sep,head,lead,...items.map(x=>'• '+x),dim+'  ·  '+trust,end].join('\n');
+  return [sep,head,lead+' '+items.join(', ')+'.',dim+'  ·  '+trust,end].join('\n');
+}
 function genDescription(r){
   const rng=seedRand(r.id||(r.produit+r.ville));
   const isPr=r.dept==='PROV';
@@ -1158,6 +1181,7 @@ function genDescription(r){
     '✅ Garantie légale 2 ans  ·  ✅ 14 jours pour changer d\'avis  ·  vendeur professionnel Maxiconfort (Paris)',
     '',
     _pick(rng,cta),'',
+    genCatalog(rng),'',
     'Maxiconfort — literie & mobilier neufs, expédié depuis Paris.'
   ].join('\n');
 }
