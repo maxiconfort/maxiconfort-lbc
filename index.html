@@ -1072,11 +1072,31 @@ const CAT_HEAD=['🛏️ TOUTE LA GAMME MAXICONFORT','🛏️ L\'UNIVERS MAXICON
 const CAT_LEAD=['Literie & mobilier neufs, livrés rapidement :','Retrouvez tous nos produits neufs au meilleur prix :','Maxiconfort, c\'est aussi :','Notre gamme complète, neuve et garantie :'];
 const CAT_DIM=['📏 Toutes tailles : 90x190 → 180x200','📏 Dimensions 90x190 à 180x200','📏 Du 90x190 au 180x200, toutes tailles'];
 const CAT_END=['Une autre taille ou un autre modèle ? Écrivez-nous !','Faites-nous votre liste, on vous fait un prix sur l\'ensemble 👍','Dites-nous ce qu\'il vous faut, on a sûrement votre bonheur.','Besoin d\'un modèle précis ? Contactez-nous, réponse rapide.'];
-function genCatalog(rng){
+// ── Catalogue MATELAS (Province) : que des matelas par dimension, varié comme le bloc IDF ──
+const MAT_ITEMS=[
+  ['Matelas 90x190 (1 place)','Matelas 1 place 90x190','Matelas 90x190 cm'],
+  ['Matelas 90x200 (1 place, grande longueur)','Matelas 1 place 90x200','Matelas 90x200 cm'],
+  ['Matelas 120x190 (2 places)','Matelas 120x190 cm','Matelas 2 places 120x190'],
+  ['Matelas 140x190 (2 places)','Matelas 140x190 cm','Matelas 2 places 140x190'],
+  ['Matelas 140x200 (2 places, grande longueur)','Matelas 140x200 cm','Matelas double 140x200'],
+  ['Matelas 160x200 (Queen Size)','Matelas 160x200 cm','Matelas Queen 160x200'],
+  ['Matelas 180x200 (King Size)','Matelas 180x200 cm','Matelas King Size 180x200']
+];
+const MAT_HEAD=['🛏️ TOUS NOS MATELAS — TOUTES TAILLES','🛏️ NOTRE GAMME DE MATELAS','🛏️ MATELAS MAXICONFORT — TOUTES DIMENSIONS','👉 BESOIN D\'UNE AUTRE TAILLE DE MATELAS ?','🛏️ MATELAS NEUFS, TOUTES TAILLES'];
+const MAT_LEAD=['Matelas neufs à mémoire de forme, livrés partout en France :','Tous nos matelas, neufs et garantis, disponibles en :','Matelas mémoire de forme & mousse, toutes tailles :','Retrouvez nos matelas dans toutes les dimensions :'];
+const MAT_TRUST=['✅ Neuf · Mémoire de forme · OEKO-TEX','✅ Matelas neufs, garantie 2 ans','✅ Neuf, sous emballage · Livraison France entière'];
+const MAT_END=['Donnez-nous votre taille, on a le matelas qu\'il vous faut !','Besoin d\'une dimension précise ? Écrivez-nous, réponse rapide.','Indiquez-nous votre taille de lit, on s\'occupe du reste 👍','Une autre taille ? Contactez-nous, livraison partout en France.'];
+function genCatalog(rng,isPr){
+  const sep='━━━━━━━━━━━━━━━━━━━━━━';
+  if(isPr){
+    const items=_shuffle(rng,MAT_ITEMS).map(v=>_pick(rng,v));
+    const head=_pick(rng,MAT_HEAD),lead=_pick(rng,MAT_LEAD),trust=_pick(rng,MAT_TRUST),end=_pick(rng,MAT_END);
+    if(rng()<0.5)return [sep,head,lead,...items.map(x=>'• '+x),trust,end].join('\n');
+    return [sep,head,lead+' '+items.join(', ')+'.',trust,end].join('\n');
+  }
   const items=_shuffle(rng,CAT_ITEMS).map(v=>_pick(rng,v));
   const head=_pick(rng,CAT_HEAD),lead=_pick(rng,CAT_LEAD),dim=_pick(rng,CAT_DIM),end=_pick(rng,CAT_END);
   const trust=_pick(rng,['✅ Tout neuf, sous emballage','✅ Neuf · Stock disponible','✅ Articles neufs, dispo immédiate']);
-  const sep='━━━━━━━━━━━━━━━━━━━━━━';
   if(rng()<0.5)return [sep,head,lead,...items.map(x=>'• '+x),dim+'  ·  '+trust,end].join('\n');
   return [sep,head,lead+' '+items.join(', ')+'.',dim+'  ·  '+trust,end].join('\n');
 }
@@ -1181,13 +1201,13 @@ function genDescription(r){
     '✅ Garantie légale 2 ans  ·  ✅ 14 jours pour changer d\'avis  ·  vendeur professionnel Maxiconfort',
     '',
     _pick(rng,cta),'',
-    genCatalog(rng),'',
+    genCatalog(rng,isPr),'',
     'Maxiconfort — literie & mobilier neufs.'
   ].join('\n');
 }
 
 function getProdPool(isPr,mode){
-  let pool=isPr?PRODS.filter(p=>p.cat==='Matelas seul Province'):PRODS.filter(p=>p.cat!=='Matelas seul Province'&&p.prix>0);
+  let pool=isPr?PRODS.filter(p=>p.cat==='Matelas seul Province'&&/matelas/i.test(p.nom)):PRODS.filter(p=>p.cat!=='Matelas seul Province'&&p.prix>0);
   if(!pool.length)pool=PRODS;
   if(mode==='ens')return[...pool].sort((a,b)=>a.nom.toLowerCase().includes('ensemble')?-1:1);
   if(mode==='lits')return[...pool].sort((a,b)=>(a.nom.toLowerCase().includes('nico')||a.nom.toLowerCase().includes('coffre'))?-1:1);
@@ -1294,8 +1314,8 @@ function setCatF(f){CAT_FILTER=f;['all','idf','prov'].forEach(x=>{const b=docume
 function renderCatalogue(){
   const el=document.getElementById('plist');if(!el)return;
   let vp;
-  if(isAdmin()){if(CAT_FILTER==='idf')vp=PRODS.filter(p=>!p.cat.includes('Province'));else if(CAT_FILTER==='prov')vp=PRODS.filter(p=>p.cat.includes('Province'));else vp=PRODS;}
-  else if(isProv())vp=PRODS.filter(p=>p.cat.includes('Province'));
+  if(isAdmin()){if(CAT_FILTER==='idf')vp=PRODS.filter(p=>!p.cat.includes('Province'));else if(CAT_FILTER==='prov')vp=PRODS.filter(p=>p.cat.includes('Province')&&/matelas/i.test(p.nom));else vp=PRODS;}
+  else if(isProv())vp=PRODS.filter(p=>p.cat.includes('Province')&&/matelas/i.test(p.nom));
   else vp=PRODS.filter(p=>!p.cat.includes('Province'));
   document.getElementById('plbl').textContent=vp.length+' produits';
   const cats=[...new Set(vp.map(p=>p.cat))];
