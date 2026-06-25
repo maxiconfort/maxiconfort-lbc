@@ -817,16 +817,9 @@ function m2t(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60)
 function renderCal(){
   const grid=document.getElementById('cal-grid');if(!grid)return;
   const today=new Date();today.setHours(0,0,0,0);
-  // Si WOFF=0 et qu'il n'y a pas d'annonces cette semaine, aller à la semaine avec des annonces
-  if(WOFF===0 && RECS.length>0){
-    const todayStr=fmtDate(today);
-    const futureDates=RECS.map(r=>r.date_pub).filter(d=>d>=todayStr).sort();
-    if(futureDates.length>0){
-      const firstFuture=new Date(futureDates[0]+'T12:00:00');
-      const currentMon=getMonday(today);
-      WOFF=Math.round((getMonday(firstFuture)-currentMon)/(7*86400000));
-    }
-  }
+  // Le calendrier s'ouvre sur AUJOURD'HUI (WOFF=0) et ne saute PLUS automatiquement vers un
+  // planning futur. Corrige le bug "calendrier bloqué" (ex. au 3 août) + bouton "Aujourd'hui"
+  // inopérant. Navigation manuelle via les flèches ◄ ► ; après génération, la vue va sur la semaine générée.
   const monday=getMonday(addDays(today,WOFF*7));
   let html='';
   for(let i=0;i<14;i++){
