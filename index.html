@@ -648,11 +648,15 @@ async function init(){
     const sp=await sbGet('lbc_produits','select=*&order=cat.asc,nom.asc&limit=500');
     if(sp&&sp.length>0)PRODS=sp;
 
-    // Charger toutes les annonces par pages de 1000 (limite Supabase plan gratuit)
+    // Charger les annonces RÉCENTES uniquement (14 derniers jours + futur), par pages de 1000.
+    // Anti-quota : charger tout l'historique à chaque ouverture a fait exploser la bande passante
+    // Supabase (7,57 Go / 5,5 Go en juillet 2026 → services restreints). L'historique ancien reste
+    // en base, il n'est simplement plus téléchargé.
+    const cutoff=fmtDate(addDays(new Date(),-14));
     let allRecs=[], page=0, pageSize=1000;
     while(true){
       const batch=await sbGet('lbc_annonces',
-        `select=*&order=date_pub.asc,heure.asc&limit=${pageSize}&offset=${page*pageSize}`);
+        `select=*&date_pub=gte.${cutoff}&order=date_pub.asc,heure.asc&limit=${pageSize}&offset=${page*pageSize}`);
       if(!batch||batch.length===0)break;
       allRecs=[...allRecs,...batch];
       if(batch.length<pageSize)break; // dernière page
@@ -718,7 +722,8 @@ async function mSync(){
   try{
     const sp=await sbGet('lbc_produits','select=*&order=cat.asc,nom.asc&limit=500');
     if(sp&&sp.length>0)PRODS=sp;
-    const sa=await sbGet('lbc_annonces','select=*&order=date_pub.asc,heure.asc&limit=50000');
+    // Même fenêtre que init() : 14 derniers jours + futur (anti-quota bande passante)
+    const sa=await sbGet('lbc_annonces',`select=*&date_pub=gte.${fmtDate(addDays(new Date(),-14))}&order=date_pub.asc,heure.asc&limit=50000`);
     if(sa&&sa.length>0){RECS=sa;saveLocal();}
     LAST_SYNC=new Date();
     setSync('✓ '+new Date().toLocaleTimeString('fr-FR'),'ok');
