@@ -1113,7 +1113,9 @@ function genDescription(r){
   else if(/sommier/.test(ln))kind='sommier';
   else if(/matelas/.test(ln))kind='matelas';
   const ferme=(/ferme|soutien/.test(ln))?'ferme (bon soutien dorsal)':(thick>=20?'ferme avec accueil moelleux':'mémoire de forme, accueil souple');
-  const coul=/noir/.test(ln)?'noir':(/blanc/.test(ln)?'blanc':(/gris/.test(ln)?'gris':''));
+  const coul=/noir/.test(ln)?'noir':(/blanc/.test(ln)?'blanc':(/gris/.test(ln)?'gris':(/marron/.test(ln)?'marron':(/beige/.test(ln)?'beige':''))));
+  // Variantes avec/sans matelas (déclinaisons IDF 2026-07) : détectées depuis le nom du produit
+  const avecMat=/avec\s+matelas/.test(ln), sansMat=/sans\s+matelas/.test(ln);
   const dimTxt=d.couch.length?d.couch.join(' + '):'',pers=_persons(d.w),dimP=dimTxt+(pers?' ('+pers+')':'');
   const B=[],add=(k,v)=>{if(v)B.push('• '+k+' : '+v);};
   let ben;
@@ -1133,21 +1135,25 @@ function genDescription(r){
     add('Revêtement','cuir PU premium'+(coul?' '+coul:''));
     add('Sommier','à lattes inclus');
     add('Rangement','grand coffre sous le sommier');
-    add('Matelas','non inclus');
+    add('Matelas',avecMat?'INCLUS — mémoire de forme haute densité':'non inclus');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, emballé');
     ben=['Grand coffre de rangement sous le sommier : un gain de place précieux.','Contour cuir PU premium : finition haut de gamme qui valorise la chambre.','Idéal petits espaces : rangez couettes, oreillers et linge de lit.','Sommier à lattes inclus : bon soutien et ventilation.'];
+    if(avecMat)ben.push('Livré avec matelas mémoire de forme : literie complète, prête à dormir.');
   }else if(kind==='nico'){
     add('Type','cadre de lit Nico');
     add('Dimensions couchage',dimP);
     add('Revêtement','simili cuir'+(coul?' '+coul:''));
+    if(avecMat)add('Matelas','INCLUS — mémoire de forme haute densité');else if(sansMat)add('Matelas','non inclus');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, emballé');
     ben=['Design élégant et chaleureux pour votre chambre.','Structure solide, montage simple.','Revêtement simili cuir facile à entretenir.'];
+    if(avecMat)ben.push('Livré avec matelas mémoire de forme : literie complète, prête à dormir.');
   }else if(kind==='superpose'){
     add('Type','lit superposé (gain de place)');
+    if(/1\s*\+\s*1/.test(ln))add('Configuration','1 place en bas + 1 place en haut');
     add('Couchages',dimTxt||'90 x 190 cm');
-    add('Structure','métal, acier renforcé');
+    add('Structure','métal, acier renforcé'+(coul?' — coloris '+coul:''));
     add('Sécurité','barrières de protection + échelle robuste');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, emballé');
@@ -1157,7 +1163,7 @@ function genDescription(r){
     add('Couchage','convertible (couchage d\'appoint)');
     add('Rangement','grand coffre avec vérins, sous la méridienne');
     add('Configuration','angle réversible (méridienne à droite ou à gauche)');
-    add('Revêtement','microfibre');
+    add('Revêtement','microfibre'+(coul?' '+coul:''));
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, emballé');
     ben=['Angle réversible : placez la méridienne à droite ou à gauche selon votre pièce.','Convertible : se transforme en couchage d\'appoint pour vos invités.','Grand coffre avec vérins sous la méridienne : idéal pour couettes et linge de lit.','Revêtement microfibre doux et résistant.','Design moderne et confort généreux.'];
