@@ -428,8 +428,25 @@ tr:hover td{background:var(--sf2)}
   <div style="padding:20px;max-width:980px">
     <div class="ft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Pilotage — tunnel des 14 derniers jours</div>
     <div id="dash-tiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:18px"></div>
+    <div class="gen-card" style="border-top:3px solid var(--am)"><div class="gen-t">🔥 Produits à pousser aujourd'hui</div><div id="dash-push"></div></div>
+    <div class="gen-card"><div class="gen-t">🧭 Décisions</div><div id="dash-decisions" style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5"></div></div>
     <div class="gen-card"><div class="gen-t">💡 Recommandations du jour</div><div id="dash-recos" style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5"></div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px" id="dash-tops"></div>
+    <div class="gen-card">
+      <div class="gen-t">⚙️ Réglages du moteur <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">répartition des créneaux par groupe (%)</span></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div class="fgr"><label class="fl">🔥 Champions</label><input class="fi" id="pa-champion" type="number" min="0" max="100" style="width:80px"></div>
+        <div class="fgr"><label class="fl">🟢 Forts</label><input class="fi" id="pa-fort" type="number" min="0" max="100" style="width:80px"></div>
+        <div class="fgr"><label class="fl">🟡 Normaux</label><input class="fi" id="pa-normal" type="number" min="0" max="100" style="width:80px"></div>
+        <div class="fgr"><label class="fl">🧪 Exploration</label><input class="fi" id="pa-explore" type="number" min="0" max="100" style="width:80px"></div>
+        <button class="btn p" onclick="saveAlloc()">Enregistrer</button>
+        <span id="pa-sum" style="font-size:11px;font-family:var(--m);color:var(--tx3)"></span>
+      </div>
+    </div>
+    <div class="gen-card">
+      <div class="gen-t">🔄 Catalogue maxiconfort.fr <span id="cs-info" style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)"></span></div>
+      <div id="dash-catsite" style="font-size:12px"></div>
+    </div>
     <div class="gen-card">
       <div class="gen-t" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">🏙 Cockpit villes <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">tier A=×5 · B=×3 · C=×1 · OFF = exclue de la génération</span></div>
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
@@ -464,6 +481,26 @@ tr:hover td{background:var(--sf2)}
     <div id="pub-actions"></div>
   </div>
 </div>
+<div id="boostov" onclick="if(event.target===this)closeBoost()" style="display:none;position:fixed;inset:0;background:rgba(8,11,18,.78);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px">
+  <div style="background:var(--sf);border:1.5px solid var(--bd2);border-radius:var(--rl);box-shadow:var(--sh);width:100%;max-width:380px;padding:22px;animation:fin .25s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:16px;font-weight:800" id="boost-ti">🔥 Booster</span><button class="icb" onclick="closeBoost()" style="width:30px;height:30px;font-size:16px">✕</button></div>
+    <div id="boost-meta" style="font-size:12px;color:var(--tx2);font-family:var(--m);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--bd)"></div>
+    <label class="fl" style="display:block;margin-bottom:6px">Intensité</label>
+    <div style="display:flex;gap:7px;margin-bottom:14px" id="boost-pcts">
+      <button class="btn" data-v="25" onclick="pickBoost(this,'pct')">+25 %</button>
+      <button class="btn" data-v="50" onclick="pickBoost(this,'pct')">+50 %</button>
+      <button class="btn" data-v="100" onclick="pickBoost(this,'pct')">+100 %</button>
+    </div>
+    <label class="fl" style="display:block;margin-bottom:6px">Durée</label>
+    <div style="display:flex;gap:7px;margin-bottom:18px" id="boost-days">
+      <button class="btn" data-v="1" onclick="pickBoost(this,'days')">24 h</button>
+      <button class="btn" data-v="3" onclick="pickBoost(this,'days')">3 jours</button>
+      <button class="btn" data-v="7" onclick="pickBoost(this,'days')">7 jours</button>
+    </div>
+    <button class="pubcopy" style="margin:0 0 8px" onclick="saveBoost()">🔥 Activer le boost</button>
+    <button class="btn d" style="width:100%;justify-content:center" onclick="clearBoost()">Retirer le boost</button>
+  </div>
+</div>
 <div id="perfov" onclick="if(event.target===this)closePerf()" style="display:none;position:fixed;inset:0;background:rgba(8,11,18,.78);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px">
   <div style="background:var(--sf);border:1.5px solid var(--bd2);border-radius:var(--rl);box-shadow:var(--sh);width:100%;max-width:400px;padding:22px;animation:fin .25s ease">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:16px;font-weight:800" id="perf-ti">📊 Résultats</span><button class="icb" onclick="closePerf()" style="width:30px;height:30px;font-size:16px">✕</button></div>
@@ -493,7 +530,7 @@ const ANON = 'sb_publishable_cRPSD97LDH0beIID1Wecxw_xY7cEAeX';
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
-let ROLE=null,TOKEN=null,RTOKEN=null,RECS=[],PRODS=[],VILLES_DB=null,CUR=null,WOFF=0,ZONE='all',CAT_F='all',FIDS=[],SYNC_T=null,LAST_SYNC=null,SYNCING=false;
+let ROLE=null,TOKEN=null,RTOKEN=null,RECS=[],PRODS=[],VILLES_DB=null,CATSITE=[],PARAMS={},CUR=null,WOFF=0,ZONE='all',CAT_F='all',FIDS=[],SYNC_T=null,LAST_SYNC=null,SYNCING=false;
 
 // ══════════════════════════════════════════════
 // SUPABASE
@@ -685,6 +722,9 @@ async function init(){
 
     // Villes pilotables (tiers A/B/C, actif) — table lbc_villes ; secours = constantes du code.
     try{const sv=await sbGet('lbc_villes','select=*&limit=500');if(sv&&sv.length>0)VILLES_DB=sv;}catch(e){}
+    // V4 : paramètres moteur + catalogue site maxiconfort.fr (62 variantes, quelques Ko)
+    try{const pp=await sbGet('lbc_params','select=*');(pp||[]).forEach(p=>PARAMS[p.id]=p.val);}catch(e){}
+    try{const cs=await sbGet('lbc_catalogue_site','select=*&limit=300');if(cs)CATSITE=cs;}catch(e){}
 
     // Charger les annonces RÉCENTES uniquement (14 derniers jours + futur), par pages de 1000.
     // Anti-quota : charger tout l'historique à chaque ouverture a fait exploser la bande passante
@@ -761,6 +801,8 @@ async function mSync(){
     const sp=await sbGet('lbc_produits','select=*&order=cat.asc,nom.asc&limit=500');
     if(sp&&sp.length>0)PRODS=sp;
     try{const sv=await sbGet('lbc_villes','select=*&limit=500');if(sv&&sv.length>0)VILLES_DB=sv;}catch(e){}
+    try{const pp=await sbGet('lbc_params','select=*');(pp||[]).forEach(p=>PARAMS[p.id]=p.val);}catch(e){}
+    try{const cs=await sbGet('lbc_catalogue_site','select=*&limit=300');if(cs)CATSITE=cs;}catch(e){}
     // Même fenêtre que init() : 14 derniers jours + futur (anti-quota bande passante)
     const sa=await sbGet('lbc_annonces',`select=*&date_pub=gte.${fmtDate(addDays(new Date(),-14))}&order=date_pub.asc,heure.asc&limit=50000`);
     if(sa&&sa.length>0){RECS=sa;saveLocal();}
@@ -1070,6 +1112,38 @@ function openPerf(id){
   document.getElementById('perfov').style.display='flex';
 }
 function closePerf(){document.getElementById('perfov').style.display='none';PERF_ID=null;}
+// ── V4 : boost temporaire d'un produit ──
+let BOOST_ID=null,BOOST_SEL={pct:50,days:3};
+function openBoost(id){
+  const p=PRODS.find(x=>x.id===id);if(!p)return;
+  BOOST_ID=id;BOOST_SEL={pct:p.boost_pct||50,days:3};
+  document.getElementById('boost-ti').textContent='🔥 Booster — '+p.nom;
+  document.getElementById('boost-meta').textContent=(p.dim||'')+' · poids actuel '+prodPoids(p)+(boostActive(p)?' · boost en cours +'+p.boost_pct+'% jusqu\'au '+p.boost_until:'');
+  ['boost-pcts','boost-days'].forEach(g=>document.getElementById(g).querySelectorAll('.btn').forEach(b=>b.classList.remove('p')));
+  document.querySelector('#boost-pcts [data-v="'+BOOST_SEL.pct+'"]')?.classList.add('p');
+  document.querySelector('#boost-days [data-v="3"]')?.classList.add('p');
+  document.getElementById('boostov').style.display='flex';
+}
+function pickBoost(btn,kind){
+  BOOST_SEL[kind==='pct'?'pct':'days']=parseInt(btn.dataset.v);
+  btn.parentElement.querySelectorAll('.btn').forEach(b=>b.classList.remove('p'));
+  btn.classList.add('p');
+}
+function closeBoost(){document.getElementById('boostov').style.display='none';BOOST_ID=null;}
+async function saveBoost(){
+  const p=PRODS.find(x=>x.id===BOOST_ID);if(!p){closeBoost();return;}
+  p.boost_pct=BOOST_SEL.pct;p.boost_until=fmtDate(addDays(new Date(),BOOST_SEL.days));p.updated_at=new Date().toISOString();
+  closeBoost();renderCatalogue();
+  showToast('🔥 Boost activé',p.nom+' : +'+p.boost_pct+' % jusqu\'au '+p.boost_until+' — regénérez les jours à venir pour appliquer');
+  try{await sbUpsert('lbc_produits',[p]);}catch(e){syncErr(e);}
+}
+async function clearBoost(){
+  const p=PRODS.find(x=>x.id===BOOST_ID);if(!p){closeBoost();return;}
+  p.boost_pct=null;p.boost_until=null;p.updated_at=new Date().toISOString();
+  closeBoost();renderCatalogue();
+  showToast('✓ Boost retiré',p.nom);
+  try{await sbUpsert('lbc_produits',[p]);}catch(e){syncErr(e);}
+}
 async function savePerf(){
   const r=RECS.find(x=>x.id===PERF_ID);if(!r){closePerf();return;}
   const num=id=>{const v=document.getElementById(id).value;return v===''?null:Math.max(0,parseInt(v)||0);};
@@ -1106,9 +1180,23 @@ const ACCROCHES=['Neuf','Promo','Arrivage','Offre','Bon plan','À saisir','Nouve
 const BENEFS_IDF=['livraison rapide','livraison offerte','dispo immédiate','stock dispo','direct entrepôt','qualité garantie','prix direct','installation possible'];
 const BENEFS_PROV=['livraison France entière','livré chez vous','expédition rapide','direct fabricant','partout en France','colis suivi','livraison à domicile'];
 const FINS=['à ne pas manquer','pour tout budget','idéal chambre','confort garanti','neuf sous emballage','qualité pro','meilleur rapport qualité-prix','prêt à dormir'];
+// V4 : familles de titres ORIENTÉS RECHERCHE par type de produit — ce que tape vraiment l'acheteur.
+// La famille utilisée est tracée (titre_fam) pour identifier plus tard celles qui convertissent le mieux.
+function kindOf(name){const ln=String(name).toLowerCase();return /ensemble|pack/.test(ln)?'ensemble':/coffre/.test(ln)?'coffre':/nico/.test(ln)?'nico':/superpos/.test(ln)?'superpose':/canap/.test(ln)?'canape':/sommier/.test(ln)?'sommier':'matelas';}
+const TITRES_RECH={
+  ensemble:[(n,d,v)=>`Ensemble Matelas Sommier ${d} Mémoire de Forme ${v}`,(n,d,v)=>`Matelas + Sommier ${d} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Pack Matelas Sommier ${d} Neuf ${v}`,(n,d,v)=>`Ensemble Literie ${d} Matelas + Sommier Neuf ${v}`],
+  matelas:[(n,d,v)=>`Matelas ${d} Mémoire de Forme Neuf ${v}`,(n,d,v)=>`Matelas ${d} Neuf Livraison Rapide ${v}`],
+  coffre:[(n,d,v)=>`Lit Coffre ${d} avec Rangement Neuf ${v}`,(n,d,v)=>`Lit Coffre ${d} Neuf Sommier Inclus ${v}`],
+  sommier:[(n,d,v)=>`Sommier ${d} Bois Massif Neuf ${v}`],
+  nico:[(n,d,v)=>`Lit ${d} Simili Cuir Design Neuf ${v}`],
+  superpose:[(n,d,v)=>`Lit Superposé ${d} Enfant Neuf ${v}`],
+  canape:[(n,d,v)=>`Canapé d'Angle Convertible Réversible Neuf ${v}`]
+};
+let LAST_TITRE_FAM='';
 function genTitre(nom,dim,ville,isPr,seed){
   const rng=seedRand(seed||(nom+'|'+dim+'|'+ville));
   const b=isPr?BENEFS_PROV:BENEFS_IDF;
+  const kind=kindOf(nom);
   const S=[
     ()=>`${nom} ${dim} ${_pick(rng,b)} ${ville}`,
     ()=>`${_pick(rng,ACCROCHES)} ${nom} ${dim} ${ville}`,
@@ -1118,7 +1206,11 @@ function genTitre(nom,dim,ville,isPr,seed){
     ()=>`${nom} ${dim} Maxiconfort ${_pick(rng,b)} ${ville}`,
     ()=>`${nom} ${dim} ${_pick(rng,FINS)} ${ville}`,
   ];
-  let t=_pick(rng,S)().replace(/\s+/g,' ').trim();
+  const fams=['classique-1','classique-2','classique-3','classique-4','classique-5','classique-6','classique-7'];
+  (TITRES_RECH[kind]||[]).forEach((f,i)=>{S.push(()=>f(nom,dim,ville));fams.push('recherche-'+kind+'-'+(i+1));});
+  const fi=Math.floor(rng()*S.length);
+  LAST_TITRE_FAM=fams[fi];
+  let t=S[fi]().replace(/\s+/g,' ').trim();
   // LBC autorise 200 caractères de titre (vérifié 27/04/2026) — on vise ~120 utiles, lisibles.
   if(t.length>120){t=t.slice(0,120);const sp=t.lastIndexOf(' ');if(sp>60)t=t.slice(0,sp);}
   return t;
@@ -1300,11 +1392,60 @@ function getProdPool(isPr,mode){
   if(mode==='mat')return[...pool].sort((a,b)=>a.nom.toLowerCase().includes('matelas')?-1:1);
   return pool;
 }
-// ── P0 : pondération par priorité — un produit « Très haute » reçoit 3x plus de créneaux qu'un « Moyenne » ──
-function weightPool(pool){
-  const out=[];
-  pool.forEach(p=>{const w=p.priorite==='Très haute'?3:p.priorite==='Moyenne'?1:2;for(let i=0;i<w;i++)out.push(p);});
-  return out;
+// ══════════════════════════════════════════════
+// V4 — CHAMPIONS, POIDS, BOOSTS & ALLOCATION
+// Le moteur choisit ce qu'il faut vendre : un produit performant
+// prend une part beaucoup plus grande des publications.
+// ══════════════════════════════════════════════
+function prodPoids(p){
+  if(p.poids!=null&&p.poids!=='')return Math.max(0,Math.min(100,Number(p.poids)));
+  return p.priorite==='Très haute'?80:p.priorite==='Moyenne'?30:50; // défaut dérivé de l'ancienne priorité
+}
+function prodClass(p){const w=prodPoids(p);return w>=80?'champion':w>=60?'fort':w>=30?'normal':'test';}
+const CLASS_BADGE={champion:'🔥 CHAMPION',fort:'🟢 FORT',normal:'🟡 NORMAL',test:'🔵 TEST'};
+function boostActive(p,ds){return p.boost_pct&&p.boost_until&&p.boost_until>=(ds||fmtDate(new Date()));}
+// Poids effectif = poids admin × boost éventuel × apprentissage (perf réelle saisie via 📊, jusqu'à +50 %)
+function effWeight(p,ds){
+  let w=prodPoids(p);
+  if(boostActive(p,ds))w=Math.round(w*(1+p.boost_pct/100));
+  const hist=RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim);
+  if(hist.length>=3){
+    const contacts=hist.reduce((s,r)=>s+(Number(r.messages)||0)+(Number(r.appels)||0),0);
+    const ventes=hist.filter(r=>r.vendu).length;
+    w=Math.round(w*(1+Math.min(.5,(contacts/hist.length)*1.5+(ventes/hist.length)*3)));
+  }
+  return Math.max(1,w);
+}
+function allocParams(){const a=PARAMS.allocation||{};return{champion:a.champion??50,fort:a.fort??25,normal:a.normal??15,explore:a.explore??10};}
+// Séquence de produits pour nb créneaux : quotas par groupe + roulette pondérée + plafond 30 %/produit + exploration.
+function allocSequence(basePool,nb,ds,rng){
+  const A=allocParams();
+  const groups={champion:[],fort:[],normal:[],test:[]};
+  basePool.forEach(p=>groups[prodClass(p)].push(p));
+  const q={champion:Math.round(nb*A.champion/100),fort:Math.round(nb*A.fort/100),normal:Math.round(nb*A.normal/100)};
+  q.explore=Math.max(0,nb-q.champion-q.fort-q.normal);
+  const seq=[],count={},cap=Math.max(2,Math.round(nb*0.3));
+  const key=p=>p.nom+'|'+p.dim;
+  const draw=(arr,n)=>{
+    if(!arr.length)return;
+    for(let k=0;k<n;k++){
+      const elig=arr.filter(p=>(count[key(p)]||0)<cap);
+      if(!elig.length)break;
+      const ws=elig.map(p=>effWeight(p,ds));
+      let tot=ws.reduce((s,x)=>s+x,0),t=rng()*tot,pick=elig[0];
+      for(let i=0;i<elig.length;i++){t-=ws[i];if(t<=0){pick=elig[i];break;}}
+      count[key(pick)]=(count[key(pick)]||0)+1;seq.push(pick);
+    }
+  };
+  draw(groups.champion.length?groups.champion:basePool,q.champion);
+  draw(groups.fort.length?groups.fort:basePool,q.fort);
+  draw(groups.normal.length?groups.normal:basePool,q.normal);
+  // Exploration (~10 %) : les produits les MOINS publiés dans la fenêtre — on continue à découvrir.
+  const pubCount=p=>RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim).length;
+  const expl=[...basePool].sort((a,b)=>pubCount(a)-pubCount(b));
+  for(let k=0;k<q.explore&&expl.length;k++){const p=expl[k%expl.length];count[key(p)]=(count[key(p)]||0)+1;seq.push(p);}
+  while(seq.length<nb&&basePool.length)seq.push(basePool[Math.floor(rng()*basePool.length)]);
+  return _shuffle(rng,seq);
 }
 // ── P0 : anti-répétition inter-jours — combos produit×ville publiés à ±7 jours de la date générée ──
 function recentCombos(ds){
@@ -1367,32 +1508,37 @@ function scoreBadge(sc){
 function buildDay(ds,nb,st,en,mode,isPr){
   const interval=Math.floor((t2m(en)-t2m(st))/nb);
   const prefix=isPr?`PROV-${ds}-`:`IDF-${ds}-`;
-  const basePool=getProdPool(isPr,mode),pool=weightPool(basePool),villes=getVP(nb,isPr,ds);
-  const used=new Set(),out=[];
-  const recent=recentCombos(ds); // combos produit×ville des 7 derniers jours → interdits (anti-cannibalisation)
-  let pi=0,phi=0,txi=0;
+  const basePool=getProdPool(isPr,mode),villes=getVP(nb,isPr,ds);
+  // V4 : la séquence de produits est ALLOUÉE par le moteur (champions >> forts >> normaux + exploration),
+  // puis chaque créneau (ville) prend le prochain produit compatible (pas 2x le même produit×ville
+  // dans la journée, ni dans les 7 derniers jours).
+  const rng=seedRand('alloc|'+ds+'|'+(isPr?'P':'I'));
+  const seq=allocSequence(basePool,nb,ds,rng);
+  const recent=recentCombos(ds);
+  const usedDay=new Set(),out=[];
+  let phi=0,txi=0;
   for(let i=0;i<nb;i++){
     const{ville,dept,zone,tier}=villes[i];
     const heure=m2t(t2m(st)+i*interval);
     const id=prefix+String(i+1).padStart(3,'0');
-    let prod=null,tries=0,fallback=null;
-    while(tries<pool.length){
-      const c=pool[(pi+tries)%pool.length];
-      const k=`${zone}|${c.ref||c.nom+c.dim}`;
-      if(!used.has(k)){
-        if(!recent.has(ville+'|'+c.nom+'|'+c.dim)){prod=c;used.add(k);pi=(pi+tries+1)%pool.length;break;}
-        if(!fallback)fallback=c; // premier candidat libre du jour, même si vu récemment (secours)
-      }
-      tries++;
+    // Choisir dans la séquence le premier produit valable pour cette ville (échange si conflit)
+    let prod=null;
+    for(let j=i;j<seq.length;j++){
+      const c=seq[j];if(!c)continue;
+      const kDay=ville+'|'+c.nom+'|'+c.dim;
+      if(!usedDay.has(kDay)&&!recent.has(kDay)){prod=c;seq[j]=seq[i];seq[i]=c;break;}
     }
-    if(!prod&&fallback){prod=fallback;used.add(`${zone}|${fallback.ref||fallback.nom+fallback.dim}`);pi=(pi+1)%pool.length;}
-    if(!prod){prod=pool[pi%pool.length];pi=(pi+1)%pool.length;}
+    if(!prod){ // secours : accepte un produit déjà vu récemment plutôt qu'un trou
+      for(let j=i;j<seq.length;j++){const c=seq[j];if(c&&!usedDay.has(ville+'|'+c.nom+'|'+c.dim)){prod=c;seq[j]=seq[i];seq[i]=c;break;}}
+    }
+    if(!prod)prod=basePool[Math.floor(rng()*basePool.length)]||seq[0];
+    usedDay.add(ville+'|'+prod.nom+'|'+prod.dim);
     const photo=PHOTOS[phi%PHOTOS.length];phi++;
     const texte=TEXTES[txi%TEXTES.length];txi++;
     const titre=genTitre(prod.nom,prod.dim,ville,isPr,id);
     const collabId=isPr?(i%2===0?'A':'B'):'';
     const score=computeScore(prod,tier||'B',ville,ds);
-    out.push({id,heure,ville,dept,date_pub:ds,produit:prod.nom,dim:prod.dim,prix:String(prod.prix),priorite:prod.priorite||'Haute',titre,photo,texte,ref:prod.ref||'',collab_id:collabId,validation:'OFF',statut:'À publier',lien:'',commentaire:'',custom:false,score,updated_at:new Date().toISOString()});
+    out.push({id,heure,ville,dept,date_pub:ds,produit:prod.nom,dim:prod.dim,prix:String(prod.prix),priorite:prod.priorite||'Haute',titre,titre_fam:LAST_TITRE_FAM,photo,texte,ref:prod.ref||'',collab_id:collabId,validation:'OFF',statut:'À publier',lien:'',commentaire:'',custom:false,score,updated_at:new Date().toISOString()});
   }
   return out;
 }
@@ -1489,6 +1635,11 @@ function renderCatalogue(){
           ${isAdmin()?`<div style="display:flex;flex-direction:column;gap:3px;width:100%">
             <div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px">Prix</span><input class="ci" type="number" value="${p.prix}" min="1" style="width:65px;color:var(--ac);font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','prix',parseFloat(this.value))" title="Modifier le prix"><span style="color:var(--ac);font-weight:800">€</span></div>
             ${p.marge!=null?`<div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px">Marge</span><input class="ci" type="number" value="${p.marge||''}" min="0" max="100" step="0.1" style="width:65px;color:var(--gn);font-weight:700;font-size:13px;text-align:right" onchange="updProd('${p.id}','marge',parseFloat(this.value)||null)" placeholder="—"><span style="color:var(--gn);font-weight:700">%</span></div>`:''}
+            <div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px" title="Poids de publication 0-100 : part des créneaux que reçoit ce produit">Poids</span><input class="ci" type="number" value="${prodPoids(p)}" min="0" max="100" style="width:65px;font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','poids',Math.max(0,Math.min(100,parseInt(this.value)||0)))"><span style="font-size:9px;font-family:var(--m);font-weight:700">${CLASS_BADGE[prodClass(p)]}</span></div>
+            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+              <button class="btn" style="font-size:10px;padding:3px 8px;${boostActive(p)?'background:var(--am2);color:var(--am);border-color:rgba(245,158,11,.4)':''}" onclick="openBoost('${p.id}')" title="Augmenter temporairement la part de publications">${boostActive(p)?'🔥 +'+p.boost_pct+'% → '+p.boost_until:'🔥 Booster'}</button>
+              <span style="font-size:9px;color:var(--tx3);font-family:var(--m)" title="Publications planifiées sur les 7 derniers jours">${RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim&&r.date_pub>=fmtDate(addDays(new Date(),-7))&&r.date_pub<=fmtDate(new Date())).length} pubs/7j</span>
+            </div>
           </div>`:isProv()?`<div style="display:flex;align-items:center;justify-content:space-between;width:100%"><span class="pp">${p.prix}€</span><button class="btn" style="font-size:10px;padding:3px 8px;height:auto" onclick="qPrix('${p.id}',${p.prix})">✏</button></div>`:`<span class="pp">${p.prix}€</span>`}
           ${isAdmin()&&p.marge?`<span class="pmg">${p.marge}%</span>`:''}
         </div>
@@ -1597,6 +1748,96 @@ function renderDash(){
   const zsel=document.getElementById('dv-zone');
   if(zsel&&zsel.options.length<=1&&VILLES_DB){[...new Set(VILLES_DB.map(v=>v.zone))].sort().forEach(z=>{const o=document.createElement('option');o.value=z;o.textContent=z;zsel.appendChild(o);});}
   renderDashVilles();
+  renderPush();renderDecisions();renderAllocParams();renderCatSite();
+}
+// ── V4 : 🔥 Produits à pousser aujourd'hui ──
+function renderPush(){
+  const el=document.getElementById('dash-push');if(!el)return;
+  const ds=fmtDate(new Date());
+  const pool=getProdPool(false,'mix');
+  const nbJour=60; // référence : volume IDF par défaut
+  const A=allocParams();
+  const rows=pool.map(p=>({p,w:effWeight(p,ds),cls:prodClass(p)}))
+    .sort((a,b)=>b.w-a.w).slice(0,5);
+  const totW=rows.reduce((s,x)=>s+x.w,0)||1;
+  const bp=_agg(RECS,'produit');
+  el.innerHTML=rows.map((x,i)=>{
+    const a=bp[x.p.nom]||{pubs:0,contacts:0,ventes:0,ca:0};
+    const conseil=Math.max(2,Math.round(nbJour*(A.champion/100)*(x.w/totW)*1.6));
+    const bestV=Object.entries(_agg(RECS.filter(r=>r.produit===x.p.nom),'ville')).filter(([,y])=>y.contacts).sort((m,n)=>n[1].contacts-m[1].contacts).slice(0,3).map(([v])=>v);
+    const motifs=[];
+    if(x.p.boost_pct&&boostActive(x.p,ds))motifs.push('boost +'+x.p.boost_pct+'% actif');
+    if(a.ventes)motifs.push(a.ventes+' vente(s)');
+    if(a.contacts)motifs.push(a.contacts+' contacts');
+    if(x.p.marge!=null)motifs.push('marge '+x.p.marge+'%');
+    if(!motifs.length)motifs.push('poids admin '+prodPoids(x.p));
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);flex-wrap:wrap">
+      <span style="font-size:16px;font-weight:800;color:var(--tx3);font-family:var(--m);width:20px">${i+1}</span>
+      <div style="flex:1;min-width:180px"><div style="font-weight:700;font-size:13px">${esc(x.p.nom)} ${esc(x.p.dim||'')}</div>
+      <div style="font-size:11px;color:var(--tx2);font-family:var(--m)">${CLASS_BADGE[x.cls]} · poids effectif ${x.w} · ${esc(motifs.join(' + '))}</div></div>
+      <div style="text-align:right"><div style="font-size:15px;font-weight:800;color:var(--ac)">≈ ${conseil} pubs</div>
+      <div style="font-size:10px;color:var(--tx3);font-family:var(--m)">${bestV.length?'meilleures villes : '+esc(bestV.join(', ')):'cibler les villes A'}</div></div>
+    </div>`;
+  }).join('')||'<div style="color:var(--tx3)">Catalogue vide</div>';
+}
+// ── V4 : 🧭 Décisions (augmenter / réduire / tester / meilleurs) ──
+function renderDecisions(){
+  const el=document.getElementById('dash-decisions');if(!el)return;
+  const bp=_agg(RECS,'produit'),bv=_agg(RECS,'ville');
+  const bd={};RECS.forEach(r=>{if(!r.dim)return;if(!bd[r.dim])bd[r.dim]={pubs:0,contacts:0,ventes:0,ca:0};const a=bd[r.dim];a.pubs++;a.contacts+=(+r.messages||0)+(+r.appels||0);if(r.vendu)a.ventes++;a.ca+=+r.ca||0;});
+  const bc={};RECS.forEach(r=>{const k=r.produit+' × '+r.ville;if(!bc[k])bc[k]={pubs:0,contacts:0,ventes:0,ca:0};const a=bc[k];a.pubs++;a.contacts+=(+r.messages||0)+(+r.appels||0);if(r.vendu)a.ventes++;a.ca+=+r.ca||0;});
+  const lines=[];
+  const best=(m,lbl,ico)=>{const e=Object.entries(m).filter(([,a])=>a.ventes||a.contacts).sort((x,y)=>(y[1].ventes-x[1].ventes)||(y[1].contacts-x[1].contacts))[0];if(e)lines.push(['gn',ico+' '+lbl+' : « '+e[0]+' » — '+e[1].contacts+' contacts, '+e[1].ventes+' vente(s)'+(e[1].ca?', '+e[1].ca.toFixed(0)+' €':'')]);};
+  best(bp,'Meilleur produit','🏆');best(bd,'Meilleure dimension','🏆');best(bv,'Meilleure ville','🏆');best(bc,'Meilleur couple produit × ville','🏆');
+  Object.entries(bp).forEach(([p,a])=>{
+    if((a.ventes>0||a.contacts>=3)&&a.pubs<10)lines.push(['ac','🔥 À AUGMENTER : « '+p+' » — '+a.contacts+' contacts / '+a.ventes+' vente(s) en seulement '+a.pubs+' publications. Monter son poids.']);
+    if(a.pubs>=8&&a.contacts===0)lines.push(['am','⚠️ À RÉDUIRE : « '+p+' » — '+a.pubs+' publications, 0 contact. Baisser son poids ou revoir prix/photo/titre.']);
+  });
+  const jamais=PRODS.filter(p=>p.actif!==false&&!RECS.some(r=>r.produit===p.nom&&r.dim===p.dim)).slice(0,3);
+  jamais.forEach(p=>lines.push(['ac','🧪 À TESTER : « '+p.nom+' '+(p.dim||'')+' » — jamais publié dans la fenêtre. L\'exploration (10 %) va le proposer.']));
+  if(!lines.length)lines.push(['ok','Pas encore assez de données saisies (📊) pour décider — le moteur tourne sur les poids admin.']);
+  const C={gn:'var(--gn)',ac:'var(--ac)',am:'var(--am)',ok:'var(--tx2)'};
+  el.innerHTML=lines.slice(0,10).map(([t,m])=>`<div style="border-left:3px solid ${C[t]};padding:6px 12px;background:var(--sf2);border-radius:0 var(--r) var(--r) 0">${esc(m)}</div>`).join('');
+}
+// ── V4 : réglages allocation ──
+function renderAllocParams(){
+  const A=allocParams();
+  ['champion','fort','normal','explore'].forEach(k=>{const e=document.getElementById('pa-'+k);if(e)e.value=A[k];});
+  const s=document.getElementById('pa-sum');if(s)s.textContent='Total : '+(A.champion+A.fort+A.normal+A.explore)+' % (idéal 100)';
+}
+async function saveAlloc(){
+  const val={};['champion','fort','normal','explore'].forEach(k=>val[k]=Math.max(0,Math.min(100,parseInt(document.getElementById('pa-'+k).value)||0)));
+  PARAMS.allocation=val;renderAllocParams();
+  showToast('⚙️ Réglages enregistrés','Champions '+val.champion+'% · Forts '+val.fort+'% · Normaux '+val.normal+'% · Exploration '+val.explore+'%');
+  try{await sbUpsert('lbc_params',[{id:'allocation',val,updated_at:new Date().toISOString()}]);}catch(e){syncErr(e);}
+}
+// ── V4 : catalogue site (lbc_catalogue_site, alimenté par le script de sync Shopify) ──
+function matchSite(p){
+  const dim=(String(p.dim).match(/(\d{2,3})\s*[x×]\s*(\d{2,3})/)||[])[0];
+  const k=kindOf(p.nom);
+  const kw={ensemble:/ensemble|pack.*sommier|matelas.*sommier/i,coffre:/coffre/i,nico:/nico/i,superpose:/superpos/i,canape:/canap/i,sommier:/sommier/i,matelas:/matelas/i};
+  const cand=CATSITE.filter(c=>{
+    if(dim&&c.dim&&c.dim.replace('×','x')!==dim.replace(/\s/g,'').replace('×','x'))return false;
+    if(k==='matelas'&&/sommier|coffre|ensemble|pack/i.test(c.titre))return false;
+    return kw[k].test(c.titre)||kw[k].test(c.type||'');
+  });
+  return cand.sort((a,b)=>(b.dispo-a.dispo))[0]||null;
+}
+function renderCatSite(){
+  const el=document.getElementById('dash-catsite');if(!el)return;
+  const info=document.getElementById('cs-info');
+  if(!CATSITE.length){el.innerHTML='Catalogue site non chargé. Lancez le script <b>_sync_catalogue_site.js</b> (PC Borhen) puis resynchronisez.';return;}
+  const last=CATSITE.reduce((m,c)=>c.updated_at>m?c.updated_at:m,'');
+  if(info)info.textContent=CATSITE.length+' variantes · sync '+(last?last.substring(0,16).replace('T',' '):'?');
+  const rows=[];
+  PRODS.filter(p=>p.actif!==false).forEach(p=>{
+    const m=matchSite(p);if(!m)return;
+    const diff=Math.round((m.prix-p.prix)*100)/100;
+    if(m.dispo===false)rows.push(`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd)"><span style="flex:1"><b>${esc(p.nom)} ${esc(p.dim||'')}</b> — épuisé/retiré sur le site</span><button class="btn d" style="font-size:10px;padding:3px 8px" onclick="updProd('${p.id}','actif',false)">⏸ Désactiver</button></div>`);
+    else if(Math.abs(diff)>=1)rows.push(`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd)"><span style="flex:1"><b>${esc(p.nom)} ${esc(p.dim||'')}</b> : LBC <b style="color:${diff<0?'var(--rd)':'var(--ac)'}">${p.prix} €</b> vs site <b>${m.prix} €</b></span><button class="btn" style="font-size:10px;padding:3px 8px" onclick="updProd('${p.id}','prix',${m.prix});renderCatSite()">→ Aligner à ${m.prix} €</button></div>`);
+  });
+  el.innerHTML=(rows.length?`<div style="margin-bottom:6px;font-weight:700;color:var(--am)">⚠ ${rows.length} écart(s) détecté(s) :</div>`+rows.join(''):'✅ Aucun écart de prix ni de disponibilité détecté entre LBC et maxiconfort.fr.')+
+    `<div style="margin-top:10px;font-size:11px;color:var(--tx3);font-family:var(--m)">Vérité catalogue/prix = maxiconfort.fr · vérité performance = données Leboncoin. Pour resynchroniser le site : script local puis bouton ⟳ de l'app.</div>`;
 }
 function renderDashVilles(){
   const el=document.getElementById('dash-villes');if(!el)return;
