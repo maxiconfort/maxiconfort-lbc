@@ -446,6 +446,22 @@ tr:hover td{background:var(--sf2)}
     <div id="pub-actions"></div>
   </div>
 </div>
+<div id="perfov" onclick="if(event.target===this)closePerf()" style="display:none;position:fixed;inset:0;background:rgba(8,11,18,.78);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px">
+  <div style="background:var(--sf);border:1.5px solid var(--bd2);border-radius:var(--rl);box-shadow:var(--sh);width:100%;max-width:400px;padding:22px;animation:fin .25s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:16px;font-weight:800" id="perf-ti">📊 Résultats</span><button class="icb" onclick="closePerf()" style="width:30px;height:30px;font-size:16px">✕</button></div>
+    <div id="perf-meta" style="font-size:12px;color:var(--tx2);font-family:var(--m);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--bd)"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="fgr"><label class="fl">👁 Vues</label><input class="fi" id="perf-vues" type="number" min="0" placeholder="—"></div>
+      <div class="fgr"><label class="fl">💬 Messages</label><input class="fi" id="perf-msg" type="number" min="0" placeholder="—"></div>
+      <div class="fgr"><label class="fl">☎ Appels</label><input class="fi" id="perf-tel" type="number" min="0" placeholder="—"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+      <label style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;cursor:pointer"><input type="checkbox" id="perf-vendu" style="width:18px;height:18px;accent-color:var(--gn)" onchange="document.getElementById('perf-ca-w').style.display=this.checked?'flex':'none'">🛒 Vendu !</label>
+      <div class="fgr" id="perf-ca-w" style="display:none;flex:1;flex-direction:row;align-items:center;gap:6px"><input class="fi" id="perf-ca" type="number" min="0" placeholder="CA €" style="max-width:110px"><span style="font-weight:800;color:var(--gn)">€</span></div>
+    </div>
+    <button class="pubcopy" style="margin:0" onclick="savePerf()">✓ Enregistrer</button>
+  </div>
+</div>
 <div id="toast"><div class="toast-t" id="toast-t"></div><div class="toast-b" id="toast-b"></div></div>
 <script>
 // ══════════════════════════════════════════════
@@ -459,7 +475,7 @@ const ANON = 'sb_publishable_cRPSD97LDH0beIID1Wecxw_xY7cEAeX';
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
-let ROLE=null,TOKEN=null,RTOKEN=null,RECS=[],PRODS=[],CUR=null,WOFF=0,ZONE='all',CAT_F='all',FIDS=[],SYNC_T=null,LAST_SYNC=null,SYNCING=false;
+let ROLE=null,TOKEN=null,RTOKEN=null,RECS=[],PRODS=[],VILLES_DB=null,CUR=null,WOFF=0,ZONE='all',CAT_F='all',FIDS=[],SYNC_T=null,LAST_SYNC=null,SYNCING=false;
 
 // ══════════════════════════════════════════════
 // SUPABASE
@@ -648,6 +664,9 @@ async function init(){
     const sp=await sbGet('lbc_produits','select=*&order=cat.asc,nom.asc&limit=500');
     if(sp&&sp.length>0)PRODS=sp;
 
+    // Villes pilotables (tiers A/B/C, actif) — table lbc_villes ; secours = constantes du code.
+    try{const sv=await sbGet('lbc_villes','select=*&limit=500');if(sv&&sv.length>0)VILLES_DB=sv;}catch(e){}
+
     // Charger les annonces RÉCENTES uniquement (14 derniers jours + futur), par pages de 1000.
     // Anti-quota : charger tout l'historique à chaque ouverture a fait exploser la bande passante
     // Supabase (7,57 Go / 5,5 Go en juillet 2026 → services restreints). L'historique ancien reste
@@ -722,6 +741,7 @@ async function mSync(){
   try{
     const sp=await sbGet('lbc_produits','select=*&order=cat.asc,nom.asc&limit=500');
     if(sp&&sp.length>0)PRODS=sp;
+    try{const sv=await sbGet('lbc_villes','select=*&limit=500');if(sv&&sv.length>0)VILLES_DB=sv;}catch(e){}
     // Même fenêtre que init() : 14 derniers jours + futur (anti-quota bande passante)
     const sa=await sbGet('lbc_annonces',`select=*&date_pub=gte.${fmtDate(addDays(new Date(),-14))}&order=date_pub.asc,heure.asc&limit=50000`);
     if(sa&&sa.length>0){RECS=sa;saveLocal();}
@@ -866,8 +886,8 @@ function goToday(){WOFF=0;renderCal();}
 // ══════════════════════════════════════════════
 function buildHead(){
   const cols=isAdmin()
-    ?[['65px','#'],['50px','Heure'],['105px','Ville'],['40px','Dept'],['125px','Produit'],['75px','Dim.'],['70px','Prix'],['50px','Marge'],['68px','Priorité'],['160px','Titre'],['62px','Valid.'],['108px','Lien LBC'],['105px','Note'],['28px','']]
-    :[['65px','#'],['50px','Heure'],['115px','Ville'],['140px','Produit'],['85px','Dim.'],['75px','Prix'],['72px','Priorité'],['185px','Titre'],['62px','Valid.'],['118px','Lien LBC'],['118px','Note'],['28px','']];
+    ?[['65px','#'],['50px','Heure'],['105px','Ville'],['40px','Dept'],['125px','Produit'],['75px','Dim.'],['70px','Prix'],['50px','Marge'],['68px','Priorité'],['160px','Titre'],['62px','Valid.'],['58px','Perf'],['108px','Lien LBC'],['105px','Note'],['28px','']]
+    :[['65px','#'],['50px','Heure'],['115px','Ville'],['140px','Produit'],['85px','Dim.'],['75px','Prix'],['72px','Priorité'],['185px','Titre'],['62px','Valid.'],['58px','Perf'],['118px','Lien LBC'],['118px','Note'],['28px','']];
   document.getElementById('thead').innerHTML='<tr>'+cols.map(([w,l])=>`<th style="width:${w}">${l}</th>`).join('')+'</tr>';
 }
 function getFiltered(){
@@ -929,13 +949,19 @@ function renderTable(){
         <button class="tog ${isOn?'on':'off'}" onclick="toggleVal('${r.id}')" title="${isOn?'ON — cliquer pour OFF':'OFF — cliquer pour ON'}"></button>
         <span class="bdg ${vs}" style="font-size:9px">${isBlq?'BLOQUÉ':isOn?'✓ ON':'OFF'}</span>
       </div></td>
+      <td style="text-align:center">${(()=>{const has=(r.messages||r.appels||r.vues||r.vendu||r.ca);
+        const lbl=has?`${r.vendu?'🛒':''}${r.messages?r.messages+'💬':''}${r.appels?r.appels+'☎':''}`||'✓':'📊';
+        return `<button class="pubbtn" style="padding:4px 8px;font-size:10px;${r.vendu?'background:var(--gn2);color:var(--gn);border-color:rgba(16,185,129,.4)':''}" onclick="openPerf('${r.id}')" title="Saisir les résultats : vues, messages, appels, vente">${lbl}</button>`;})()}</td>
       <td><div style="display:flex;align-items:center;gap:3px"><input class="ci" type="text" value="${esc(r.lien)}" placeholder="Lien LBC..." onchange="pF('${r.id}','lien',this.value)">${safeUrl(r.lien)?`<a class="icb copy" href="${esc(safeUrl(r.lien))}" target="_blank" rel="noopener" title="Ouvrir l'annonce sur Leboncoin" style="text-decoration:none;font-size:14px">↗</a>`:''}</div></td>
       <td><input class="ci" type="text" value="${esc(r.commentaire)}" placeholder="Note..." onchange="pF('${r.id}','commentaire',this.value)"></td>
       <td>${r.custom?`<button class="icb" onclick="delAnn('${r.id}')" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a1 1 0 011-1h2a1 1 0 011 1v2"/></svg></button>`:''}</td>
     </tr>`;
   }).join('');
   const all=isAdmin()?getZoneRecs(RECS.filter(r=>r.date_pub===CUR)):getMyRecs().filter(r=>r.date_pub===CUR);
-  document.getElementById('dv-info').textContent=all.length+' annonces · '+all.filter(r=>r.validation==='ON').length+' validées · '+all.filter(r=>r.validation==='OFF'&&r.statut!=='Bloqué').length+' restantes';
+  const sum=k=>all.reduce((s,r)=>s+(Number(r[k])||0),0);
+  const nV=all.filter(r=>r.vendu).length,caT=sum('ca');
+  const perfTxt=(sum('messages')||sum('appels')||nV)?' · 💬'+sum('messages')+' ☎'+sum('appels')+' 🛒'+nV+(caT?' ('+caT+'€)':''):'';
+  document.getElementById('dv-info').textContent=all.length+' annonces · '+all.filter(r=>r.validation==='ON').length+' validées · '+all.filter(r=>r.validation==='OFF'&&r.statut!=='Bloqué').length+' restantes'+perfTxt;
 }
 
 // ══════════════════════════════════════════════
@@ -1009,6 +1035,36 @@ function openPublier(id){
   document.getElementById('pubov').style.display='flex';
 }
 function closePublier(){document.getElementById('pubov').style.display='none';}
+// ── P1 : saisie des performances (vues/messages/appels/vente) — la boucle d'apprentissage ──
+let PERF_ID=null;
+function openPerf(id){
+  const r=RECS.find(x=>x.id===id);if(!r)return;
+  PERF_ID=id;
+  document.getElementById('perf-ti').textContent='📊 Résultats — '+r.ville;
+  document.getElementById('perf-meta').textContent=r.produit+' · '+r.dim+' · '+r.prix+' € · publiée le '+r.date_pub;
+  document.getElementById('perf-vues').value=r.vues!=null?r.vues:'';
+  document.getElementById('perf-msg').value=r.messages!=null?r.messages:'';
+  document.getElementById('perf-tel').value=r.appels!=null?r.appels:'';
+  document.getElementById('perf-vendu').checked=!!r.vendu;
+  document.getElementById('perf-ca').value=r.ca!=null?r.ca:'';
+  document.getElementById('perf-ca-w').style.display=r.vendu?'flex':'none';
+  document.getElementById('perfov').style.display='flex';
+}
+function closePerf(){document.getElementById('perfov').style.display='none';PERF_ID=null;}
+async function savePerf(){
+  const r=RECS.find(x=>x.id===PERF_ID);if(!r){closePerf();return;}
+  const num=id=>{const v=document.getElementById(id).value;return v===''?null:Math.max(0,parseInt(v)||0);};
+  const patch={
+    vues:num('perf-vues'),messages:num('perf-msg'),appels:num('perf-tel'),
+    vendu:document.getElementById('perf-vendu').checked,
+    ca:(()=>{const v=document.getElementById('perf-ca').value;return v===''?null:Math.max(0,parseFloat(v)||0);})(),
+    updated_at:new Date().toISOString()
+  };
+  Object.assign(r,patch);saveLocal();closePerf();renderTable();
+  if(patch.vendu)showToast('🛒 Vente enregistrée !',r.produit+' à '+r.ville+(patch.ca?' — '+patch.ca+' €':''));
+  else showToast('📊 Résultats enregistrés',r.ville+' — '+r.produit);
+  try{await sbPatch('lbc_annonces',PERF_ID||r.id,patch);}catch(e){syncErr(e);}
+}
 function pubCopy(elId,btn){
   const el=document.getElementById(elId);el.focus();el.select();
   const label=btn.textContent;
@@ -1242,17 +1298,35 @@ function recentCombos(ds){
   });
   return s;
 }
-function getVP(nb,isPr){
-  const map=isPr?VILLES_PROV:VILLES_IDF,zones=Object.keys(map);
-  const ptr={};zones.forEach(z=>ptr[z]=0);
-  const out=[];let zi=0;
-  while(out.length<nb){const z=zones[zi%zones.length];const list=map[z];const v=list[ptr[z]%list.length];ptr[z]++;out.push({ville:v,dept:isPr?'PROV':z,zone:z});zi++;}
+// ── P1 : villes pilotées par lbc_villes (tiers A/B/C pondérés A=5/B=3/C=1, villes désactivables) ──
+// Tirage pondéré déterministe par date : les villes A sortent ~5x plus souvent que les C,
+// une ville n'apparaît qu'une fois par jour tant qu'il reste des villes libres.
+function getCityPool(isPr){
+  if(VILLES_DB&&VILLES_DB.length){
+    const p=VILLES_DB.filter(v=>(isPr?v.dept==='PROV':v.dept!=='PROV')&&v.actif!==false);
+    if(p.length)return p;
+  }
+  // Secours : constantes historiques, tout en tier B
+  const map=isPr?VILLES_PROV:VILLES_IDF;
+  const out=[];
+  Object.entries(map).forEach(([z,list])=>list.forEach(v=>out.push({ville:v,dept:isPr?'PROV':z,zone:z,tier:'B'})));
+  return out;
+}
+function getVP(nb,isPr,ds){
+  const cities=getCityPool(isPr);
+  const W={'A':5,'B':3,'C':1};
+  const rng=seedRand('villes|'+(ds||'')+'|'+(isPr?'P':'I'));
+  const weighted=[];cities.forEach(c=>{for(let i=0;i<(W[c.tier]||3);i++)weighted.push(c);});
+  const shuffled=_shuffle(rng,weighted);
+  const out=[],seen=new Set();
+  for(const c of shuffled){if(out.length>=nb)break;if(seen.has(c.ville))continue;seen.add(c.ville);out.push({ville:c.ville,dept:c.dept,zone:c.zone});}
+  let i=0;while(out.length<nb){const c=shuffled[i%shuffled.length];out.push({ville:c.ville,dept:c.dept,zone:c.zone});i++;}
   return out;
 }
 function buildDay(ds,nb,st,en,mode,isPr){
   const interval=Math.floor((t2m(en)-t2m(st))/nb);
   const prefix=isPr?`PROV-${ds}-`:`IDF-${ds}-`;
-  const basePool=getProdPool(isPr,mode),pool=weightPool(basePool),villes=getVP(nb,isPr);
+  const basePool=getProdPool(isPr,mode),pool=weightPool(basePool),villes=getVP(nb,isPr,ds);
   const used=new Set(),out=[];
   const recent=recentCombos(ds); // combos produit×ville des 7 derniers jours → interdits (anti-cannibalisation)
   let pi=0,phi=0,txi=0;
