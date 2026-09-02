@@ -290,6 +290,7 @@ tr:hover td{background:var(--sf2)}
   <button class="tab" id="t2" onclick="goTab('generateur')" style="display:none">⚡ Générateur</button>
   <button class="tab" id="t3" onclick="goTab('ajouter')">➕ Annonce</button>
   <button class="tab" id="t4" onclick="goTab('rentabilite')" style="display:none">💰 Rentabilité</button>
+  <button class="tab" id="t5" onclick="goTab('pilotage')" style="display:none">📊 Pilotage</button>
 </div>
 <div id="panel-calendrier" class="panel active">
   <div id="cal-view">
@@ -420,6 +421,23 @@ tr:hover td{background:var(--sf2)}
     <div class="fgr" style="margin-bottom:12px"><label class="fl">Titre</label><div style="display:flex;gap:7px"><input class="fi" id="atitre" type="text" placeholder="Auto ou saisir..." style="flex:1"><button class="btn" onclick="autoTitre()">✦ Auto</button></div></div>
     <div class="fgr" style="margin-bottom:18px"><label class="fl">Note</label><input class="fi" id="anote" type="text" placeholder="ex: Stock limité..."></div>
     <div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn p" onclick="addAnnonce()">Ajouter</button><button class="btn" onclick="clearAnnForm()">Vider</button></div>
+  </div>
+</div>
+<div id="panel-pilotage" class="panel">
+  <div style="padding:9px 20px;background:var(--sf2);border-bottom:1px solid var(--bd)"><button class="btn gh" onclick="goTab('calendrier')" style="font-size:12px;font-weight:700">← Calendrier</button></div>
+  <div style="padding:20px;max-width:980px">
+    <div class="ft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Pilotage — tunnel des 14 derniers jours</div>
+    <div id="dash-tiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:18px"></div>
+    <div class="gen-card"><div class="gen-t">💡 Recommandations du jour</div><div id="dash-recos" style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5"></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px" id="dash-tops"></div>
+    <div class="gen-card">
+      <div class="gen-t" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">🏙 Cockpit villes <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">tier A=×5 · B=×3 · C=×1 · OFF = exclue de la génération</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <input class="fi" id="dv-search" type="text" placeholder="Chercher une ville..." style="max-width:220px" oninput="renderDashVilles()">
+        <select class="fi" id="dv-zone" style="max-width:160px" onchange="renderDashVilles()"><option value="">Toutes zones</option></select>
+      </div>
+      <div id="dash-villes" style="max-height:380px;overflow-y:auto"></div>
+    </div>
   </div>
 </div>
 <div id="panel-rentabilite" class="panel">
@@ -599,6 +617,7 @@ function applyRole(){
   // Onglets admin seulement
   document.getElementById('t2').style.display=isA?'flex':'none';
   document.getElementById('t4').style.display=isA?'flex':'none';
+  document.getElementById('t5').style.display=isA?'flex':'none';
   document.getElementById('btn-gen').style.display=isA?'flex':'none';
   // UI admin seulement
   document.getElementById('zflt').style.display=isA?'flex':'none';
@@ -941,7 +960,7 @@ function renderTable(){
       return isAdmin()?`<div style="display:flex;align-items:center;gap:2px">${warn}<input class="ci pi" type="number" value="${r.prix}" min="1" style="width:63px;font-size:13px;font-weight:800;text-align:right;${bad?'color:var(--rd)!important':''}" onchange="patchPrix('${r.id}',this.value)"></div>`:
       `<span style="font-weight:800;font-size:13px;color:${bad?'var(--rd)':'var(--ac)'};font-family:var(--m)">${warn}${r.prix}€</span>`;})()}</td>
       ${mgC}
-      <td><span class="bdg ${pb}">${r.priorite==='Très haute'?'⚡':r.priorite==='Haute'?'↑':'·'} ${r.priorite}</span></td>
+      <td><div style="display:flex;flex-direction:column;gap:2px;align-items:flex-start"><span class="bdg ${pb}">${r.priorite==='Très haute'?'⚡':r.priorite==='Haute'?'↑':'·'} ${r.priorite}</span>${scoreBadge(r.score)}</div></td>
       <td><div style="display:flex;align-items:flex-start;gap:6px"><div style="flex:1;min-width:0"><div class="tm" title="${esc(r.titre)}" style="max-width:190px;user-select:text;cursor:text">${esc(r.titre)}</div><div class="ts"><span>${r.photo}</span><span>${r.texte}</span></div></div>
         <button class="pubbtn" onclick="openPublier('${r.id}')" title="Voir et copier le titre + la description à publier">Publier ▸</button>
       </div></td>
@@ -1319,9 +1338,31 @@ function getVP(nb,isPr,ds){
   const weighted=[];cities.forEach(c=>{for(let i=0;i<(W[c.tier]||3);i++)weighted.push(c);});
   const shuffled=_shuffle(rng,weighted);
   const out=[],seen=new Set();
-  for(const c of shuffled){if(out.length>=nb)break;if(seen.has(c.ville))continue;seen.add(c.ville);out.push({ville:c.ville,dept:c.dept,zone:c.zone});}
-  let i=0;while(out.length<nb){const c=shuffled[i%shuffled.length];out.push({ville:c.ville,dept:c.dept,zone:c.zone});i++;}
+  for(const c of shuffled){if(out.length>=nb)break;if(seen.has(c.ville))continue;seen.add(c.ville);out.push({ville:c.ville,dept:c.dept,zone:c.zone,tier:c.tier||'B'});}
+  let i=0;while(out.length<nb){const c=shuffled[i%shuffled.length];out.push({ville:c.ville,dept:c.dept,zone:c.zone,tier:c.tier||'B'});i++;}
   return out;
+}
+// ── P2 : score /100 d'une combinaison produit × ville × date ──
+// 🔥 80-100 prioritaire · 🟢 60-79 bon · 🟡 40-59 secondaire · 🔴 <40 à éviter
+function computeScore(prod,villeTier,ville,ds){
+  let s=0;
+  s+=prod.priorite==='Très haute'?30:prod.priorite==='Moyenne'?8:18;            // potentiel produit
+  s+=villeTier==='A'?25:villeTier==='C'?6:15;                                    // potentiel ville
+  s+=prod.marge!=null?Math.min(15,Math.round(prod.marge/3)):8;                   // marge (défaut milieu)
+  // Fraîcheur : jours depuis la dernière publication de ce produit dans cette ville (fenêtre chargée)
+  let last=null;const d0=new Date(ds+'T12:00:00');
+  RECS.forEach(r=>{if(r.ville===ville&&r.produit===prod.nom&&r.dim===prod.dim&&r.date_pub&&r.date_pub!==ds){const dd=(d0-new Date(r.date_pub+'T12:00:00'))/86400000;if(dd>0&&(last===null||dd<last))last=dd;}});
+  s+=last===null||last>=7?20:last>=3?10:0;
+  // Performance historique du produit (toutes villes) : ventes et contacts saisis via 📊
+  const hist=RECS.filter(r=>r.produit===prod.nom&&r.dim===prod.dim);
+  if(hist.some(r=>r.vendu))s+=10;
+  else if(hist.some(r=>(r.messages||0)+(r.appels||0)>0))s+=5;
+  return Math.min(100,s);
+}
+function scoreBadge(sc){
+  if(sc==null)return'';
+  const e=sc>=80?'🔥':sc>=60?'🟢':sc>=40?'🟡':'🔴';
+  return `<span title="Score de potentiel /100" style="font-size:10px;font-family:var(--m);font-weight:700;color:var(--tx2)">${e}${sc}</span>`;
 }
 function buildDay(ds,nb,st,en,mode,isPr){
   const interval=Math.floor((t2m(en)-t2m(st))/nb);
@@ -1331,7 +1372,7 @@ function buildDay(ds,nb,st,en,mode,isPr){
   const recent=recentCombos(ds); // combos produit×ville des 7 derniers jours → interdits (anti-cannibalisation)
   let pi=0,phi=0,txi=0;
   for(let i=0;i<nb;i++){
-    const{ville,dept,zone}=villes[i];
+    const{ville,dept,zone,tier}=villes[i];
     const heure=m2t(t2m(st)+i*interval);
     const id=prefix+String(i+1).padStart(3,'0');
     let prod=null,tries=0,fallback=null;
@@ -1350,7 +1391,8 @@ function buildDay(ds,nb,st,en,mode,isPr){
     const texte=TEXTES[txi%TEXTES.length];txi++;
     const titre=genTitre(prod.nom,prod.dim,ville,isPr,id);
     const collabId=isPr?(i%2===0?'A':'B'):'';
-    out.push({id,heure,ville,dept,date_pub:ds,produit:prod.nom,dim:prod.dim,prix:String(prod.prix),priorite:prod.priorite||'Haute',titre,photo,texte,ref:prod.ref||'',collab_id:collabId,validation:'OFF',statut:'À publier',lien:'',commentaire:'',custom:false,updated_at:new Date().toISOString()});
+    const score=computeScore(prod,tier||'B',ville,ds);
+    out.push({id,heure,ville,dept,date_pub:ds,produit:prod.nom,dim:prod.dim,prix:String(prod.prix),priorite:prod.priorite||'Haute',titre,photo,texte,ref:prod.ref||'',collab_id:collabId,validation:'OFF',statut:'À publier',lien:'',commentaire:'',custom:false,score,updated_at:new Date().toISOString()});
   }
   return out;
 }
@@ -1434,10 +1476,13 @@ function renderCatalogue(){
   el.innerHTML=cats.map(cat=>{
     const ps=vp.filter(p=>p.cat===cat);
     return `<div class="pcat"><div class="pcl">${cat}</div><div class="pg">${ps.map(p=>`
-      <div class="pc" id="pc-${p.id}">
+      <div class="pc" id="pc-${p.id}" style="${p.actif===false?'opacity:.45':''}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px">
-          <div class="pn">${esc(p.nom)}</div>
+          <div class="pn">${esc(p.nom)}${p.actif===false?' <span style="font-size:9px;color:var(--rd);font-family:var(--m)">OFF</span>':''}</div>
+          <div style="display:flex;gap:2px;flex-shrink:0">
+          ${isAdmin()?`<button class="icb" onclick="updProd('${p.id}','actif',${p.actif===false})" title="${p.actif===false?'Réactiver dans le générateur':'Retirer du générateur (produit bloqué)'}" style="font-size:12px">${p.actif===false?'▶':'⏸'}</button>`:''}
           ${(isAdmin()||isProv())?`<button class="icb" onclick="delProd('${p.id}')" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m5 0V4a1 1 0 011-1h2a1 1 0 011 1v2"/></svg></button>`:''}
+          </div>
         </div>
         <div class="pm">${esc(p.dim)||'—'}${isAdmin()&&p.ref?' · '+esc(p.ref):''}</div>
         <div class="pf">
@@ -1453,6 +1498,7 @@ function renderCatalogue(){
 async function updProd(id,key,val){
   const p=PRODS.find(x=>x.id===id);if(!p)return;
   p[key]=val;p.updated_at=new Date().toISOString();
+  if(key==='actif')renderCatalogue();
   if(key==='prix'){const up=RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim);if(up.length){up.forEach(r=>{r.prix=String(val);r.updated_at=new Date().toISOString();});try{await sbUpsert('lbc_annonces',up);}catch(e){}if(CUR)renderTable();}}
   const card=document.getElementById('pc-'+id);if(card){card.style.borderColor='var(--gn)';setTimeout(()=>card.style.borderColor='',800);}
   buildProdSelect();setSync('⟳ Sauvegarde prix...','am');
@@ -1503,9 +1549,78 @@ function renderRenta(){document.getElementById('rbody').innerHTML=RENTA_DATA.map
 async function updRenta(i,v){if(isNaN(v)||v<=0)return;const r=RENTA_DATA[i];r.pv=v;const pt=r.pm+r.ps,pvh=v/1.2,me=pvh-pt-r.l,mg=me/pvh*100,cf=v/pt;r.mg=mg;r.c=cf;document.getElementById('pvh'+i).textContent=pvh.toFixed(2)+'€';document.getElementById('me'+i).textContent=me.toFixed(2)+'€';document.getElementById('mp'+i).textContent=mg.toFixed(1)+'%';document.getElementById('cf'+i).textContent=cf.toFixed(2)+'x';const p=PRODS.find(x=>x.ref===r.r);if(p){p.prix=v;p.marge=parseFloat(mg.toFixed(1));p.updated_at=new Date().toISOString();try{await sbUpsert('lbc_produits',[p]);}catch(e){}renderCatalogue();}const tr=document.getElementById('rbody').children[i];if(tr){tr.style.background='var(--gn2)';setTimeout(()=>tr.style.background='',800);}}
 
 // ══════════════════════════════════════════════
+// P2 — PILOTAGE (dashboard admin + recommandations + cockpit villes)
+// ══════════════════════════════════════════════
+function _agg(recs,key){
+  const m={};
+  recs.forEach(r=>{const k=r[key];if(!k)return;if(!m[k])m[k]={pubs:0,vues:0,contacts:0,ventes:0,ca:0};
+    const a=m[k];a.pubs++;a.vues+=Number(r.vues)||0;a.contacts+=(Number(r.messages)||0)+(Number(r.appels)||0);if(r.vendu)a.ventes++;a.ca+=Number(r.ca)||0;});
+  return m;
+}
+function renderDash(){
+  const today=fmtDate(new Date());
+  const tod=RECS.filter(r=>r.date_pub===today);
+  const S=k=>RECS.reduce((s,r)=>s+(Number(r[k])||0),0);
+  const ventes=RECS.filter(r=>r.vendu).length,contacts=S('messages')+S('appels');
+  const tile=(l,v,c)=>`<div style="background:var(--sf);border:1.5px solid var(--bd);border-radius:var(--rl);padding:12px 14px"><div class="sl">${l}</div><div style="font-size:22px;font-weight:800;letter-spacing:-1px;color:${c||'var(--tx)'}">${v}</div></div>`;
+  document.getElementById('dash-tiles').innerHTML=
+    tile('Aujourd\'hui publiées',tod.filter(r=>r.validation==='ON').length+' / '+tod.length,'var(--ac)')+
+    tile('👁 Vues saisies',S('vues'))+
+    tile('💬+☎ Contacts',contacts,'var(--ac)')+
+    tile('🛒 Ventes',ventes,'var(--gn)')+
+    tile('CA saisi',S('ca').toFixed(0)+' €','var(--gn)')+
+    tile('Annonces fenêtre 14 j',RECS.length);
+  // ── Tops produits / villes (dès qu'il y a des données perf) ──
+  const bp=_agg(RECS,'produit'),bv=_agg(RECS,'ville');
+  const top=(m,n)=>Object.entries(m).filter(([,a])=>a.contacts||a.ventes).sort((x,y)=>(y[1].ventes-x[1].ventes)||(y[1].contacts-x[1].contacts)).slice(0,n);
+  const tprod=top(bp,5),tville=top(bv,5);
+  const list=(title,rows)=>`<div class="gen-card" style="margin:0"><div class="gen-t">${title}</div>${rows.length?rows.map(([k,a])=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(k)}</span><span style="font-family:var(--m);white-space:nowrap;color:var(--tx2)">${a.contacts}💬 ${a.ventes}🛒${a.ca?' '+a.ca.toFixed(0)+'€':''}</span></div>`).join(''):'<div style="font-size:12px;color:var(--tx3)">Pas encore de données — faites saisir les 📊</div>'}</div>`;
+  document.getElementById('dash-tops').innerHTML=list('🏆 Top produits',tprod)+list('🏙 Top villes',tville);
+  // ── Recommandations à règles ──
+  const recos=[];
+  const perfCount=RECS.filter(r=>r.vues||r.messages||r.appels||r.vendu).length;
+  if(perfCount===0)recos.push(['am','Aucune performance saisie pour l\'instant. Demandez aux collaboratrices de cliquer 📊 dès qu\'une annonce reçoit message/appel/vente — c\'est le carburant de tout le pilotage.']);
+  Object.entries(bp).forEach(([p,a])=>{
+    if(a.ventes>0)recos.push(['gn','WINNER : « '+p+' » a généré '+a.ventes+' vente(s)'+(a.ca?' ('+a.ca.toFixed(0)+' €)':'')+' → augmenter sa fréquence et le dupliquer sur les villes A.']);
+    else if(a.contacts>=3)recos.push(['ac','« '+p+' » : '+a.contacts+' contacts mais 0 vente enregistrée → vérifier les réponses en messagerie ou le prix.']);
+  });
+  Object.entries(bv).forEach(([v,a])=>{if(a.contacts>=2){const vd=(VILLES_DB||[]).find(x=>x.ville===v);if(vd&&vd.tier!=='A')recos.push(['ac','La ville « '+v+' » (tier '+vd.tier+') génère '+a.contacts+' contacts → envisager de la passer en tier A.']);}});
+  // Produits Très haute non publiés depuis 7 j
+  const d7=fmtDate(addDays(new Date(),-7));
+  PRODS.filter(p=>p.priorite==='Très haute'&&p.actif!==false).forEach(p=>{
+    if(!RECS.some(r=>r.produit===p.nom&&r.dim===p.dim&&r.date_pub>=d7))recos.push(['am','Produit prioritaire sous-publié : « '+p.nom+' '+(p.dim||'')+' » — aucune annonce depuis 7 jours.']);
+  });
+  if(recos.length===(perfCount===0?1:0))recos.push(['ok','Rien d\'anormal détecté. Continuez la saisie 📊 pour affiner les recommandations.']);
+  const C={gn:'var(--gn)',ac:'var(--ac)',am:'var(--am)',ok:'var(--tx2)'};
+  document.getElementById('dash-recos').innerHTML=recos.slice(0,8).map(([t,m])=>`<div style="border-left:3px solid ${C[t]};padding:6px 12px;background:var(--sf2);border-radius:0 var(--r) var(--r) 0">${esc(m)}</div>`).join('');
+  // ── Cockpit villes ──
+  const zsel=document.getElementById('dv-zone');
+  if(zsel&&zsel.options.length<=1&&VILLES_DB){[...new Set(VILLES_DB.map(v=>v.zone))].sort().forEach(z=>{const o=document.createElement('option');o.value=z;o.textContent=z;zsel.appendChild(o);});}
+  renderDashVilles();
+}
+function renderDashVilles(){
+  const el=document.getElementById('dash-villes');if(!el)return;
+  if(!VILLES_DB){el.innerHTML='<div style="font-size:12px;color:var(--tx3)">Table lbc_villes non chargée — resynchronisez.</div>';return;}
+  const q=(document.getElementById('dv-search').value||'').toLowerCase();
+  const z=document.getElementById('dv-zone').value;
+  const rows=VILLES_DB.filter(v=>(!q||v.ville.toLowerCase().includes(q))&&(!z||v.zone===z)).sort((a,b)=>a.tier.localeCompare(b.tier)||a.ville.localeCompare(b.ville)).slice(0,120);
+  el.innerHTML='<table style="table-layout:auto"><thead><tr><th>Ville</th><th>Zone</th><th style="width:70px">Tier</th><th style="width:60px">Actif</th></tr></thead><tbody>'+
+    rows.map(v=>`<tr style="${v.actif===false?'opacity:.45':''}"><td style="font-weight:600">${esc(v.ville)}</td><td style="font-family:var(--m);font-size:11px;color:var(--tx3)">${esc(v.zone)}</td>
+      <td><select class="ci" style="width:56px" onchange="patchVille('${v.id}','tier',this.value)"><option${v.tier==='A'?' selected':''}>A</option><option${v.tier==='B'?' selected':''}>B</option><option${v.tier==='C'?' selected':''}>C</option></select></td>
+      <td style="text-align:center"><button class="tog ${v.actif!==false?'on':'off'}" onclick="patchVille('${v.id}','actif',${v.actif===false})"></button></td></tr>`).join('')+'</tbody></table>'+
+    (rows.length===120?'<div style="font-size:11px;color:var(--tx3);padding:8px">Affichage limité à 120 — affinez la recherche.</div>':'');
+}
+async function patchVille(id,key,val){
+  const v=(VILLES_DB||[]).find(x=>x.id===id);if(!v)return;
+  v[key]=val;renderDashVilles();
+  try{await sbPatch('lbc_villes',id,{[key]:val,updated_at:new Date().toISOString()});showToast('✓ Ville mise à jour',v.ville+' — '+(key==='tier'?'tier '+val:(val?'activée':'désactivée')));}
+  catch(e){syncErr(e);}
+}
+
+// ══════════════════════════════════════════════
 // NAVIGATION & UTILS
 // ══════════════════════════════════════════════
-function goTab(name){saveLocal();const names=['calendrier','catalogue','generateur','ajouter','rentabilite'];document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));const panel=document.getElementById('panel-'+name);if(panel)panel.classList.add('active');if(name==='calendrier')renderCal();}
+function goTab(name){saveLocal();const names=['calendrier','catalogue','generateur','ajouter','rentabilite','pilotage'];document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));const panel=document.getElementById('panel-'+name);if(panel)panel.classList.add('active');if(name==='calendrier')renderCal();if(name==='pilotage')renderDash();}
 function exportCSV(){const h='ID,Date,Heure,Ville,Dept,CollabID,Produit,Dim,Prix,Priorite,Titre,Validation,Statut,Lien,Note\n';const rows=RECS.map(r=>[r.id,r.date_pub,r.heure,r.ville,r.dept,r.collab_id||'',r.produit,r.dim,r.prix,r.priorite,'"'+r.titre+'"',r.validation,r.statut,r.lien||'','"'+(r.commentaire||'')+'"'].join(',')).join('\n');const b=new Blob([h+rows],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='maxiconfort_lbc.csv';a.click();URL.revokeObjectURL(u);}
 function toggleTheme(){const h=document.documentElement,d=h.getAttribute('data-theme')==='dark';h.setAttribute('data-theme',d?'light':'dark');try{localStorage.setItem('mc_theme',d?'light':'dark');}catch(e){}}
 try{const t=localStorage.getItem('mc_theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}
