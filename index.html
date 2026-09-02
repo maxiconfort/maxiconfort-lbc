@@ -442,6 +442,11 @@ tr:hover td{background:var(--sf2)}
         <button class="btn p" onclick="saveAlloc()">Enregistrer</button>
         <span id="pa-sum" style="font-size:11px;font-family:var(--m);color:var(--tx3)"></span>
       </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)">
+        <div class="fgr"><label class="fl" title="Prix d'achat HT en % du prix de vente TTC (ex. Borhen : 35 € HT pour 99 € TTC)">💶 Achat (% du PV TTC)</label><input class="fi" id="pr-ratio" type="number" min="5" max="90" style="width:90px"></div>
+        <div class="fgr"><label class="fl">🚚 Livraison (€)</label><input class="fi" id="pr-liv" type="number" min="0" max="200" style="width:90px"></div>
+        <button class="btn p" onclick="saveRenta()">Enregistrer le ratio</button>
+      </div>
     </div>
     <div class="gen-card">
       <div class="gen-t">🔄 Catalogue maxiconfort.fr <span id="cs-info" style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)"></span></div>
@@ -463,6 +468,8 @@ tr:hover td{background:var(--sf2)}
     <div style="font-size:14px;font-weight:800;margin:18px 0 11px;display:flex;align-items:center;gap:9px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Rentabilité SF952B — Confidentiel Admin</div>
     <table class="rtt"><thead><tr><th style="text-align:left">Ensemble</th><th style="text-align:left">Réf.</th><th>Sommier</th><th>PR Mat.</th><th>PR Som.</th><th>PR Total</th><th>PV TTC</th><th>PV HT</th><th>Livraison</th><th>Marge €</th><th>Marge %</th><th>Coef</th></tr></thead><tbody id="rbody"></tbody></table>
     <div style="margin-top:11px;padding:9px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--r);font-size:10px;color:var(--tx3);font-family:var(--m)">PV HT = PV TTC / 1.20 | Marge = PV HT − PR Total − Livraison | Coef = PV TTC / PR Total</div>
+    <div style="font-size:14px;font-weight:800;margin:22px 0 11px">📐 Tous les produits — estimation par ratio (achat ≈ 35 % du PV TTC, ex. 99 € vendu / 35 € HT acheté)</div>
+    <table class="rtt"><thead><tr><th style="text-align:left">Produit</th><th style="text-align:left">Dim.</th><th>PV TTC</th><th>Achat est.</th><th>PV HT</th><th>Livraison</th><th>Marge €</th><th>Marge %</th><th>Coef</th></tr></thead><tbody id="rbody2"></tbody></table>
   </div>
 </div>
 </div>
@@ -477,6 +484,7 @@ tr:hover td{background:var(--sf2)}
     <label class="publ">Description <span class="pubhint">— colle-la dans le champ « Description »</span></label>
     <textarea id="pub-desc" class="pubarea" readonly onclick="this.select()"></textarea>
     <button class="pubcopy" id="pub-cde" onclick="pubCopy('pub-desc',this)">Copier la description</button>
+    <div id="pub-photos" style="display:none;margin-bottom:14px"></div>
     <div class="pubnote">📷 Ajoute tes photos · Catégorie Leboncoin : <b>Maison &gt; Ameublement / Literie</b></div>
     <div id="pub-actions"></div>
   </div>
@@ -1089,6 +1097,22 @@ function openPublier(id){
   document.getElementById('pub-desc').value=genDescription(r);
   document.getElementById('pub-cti').textContent='Copier le titre';
   document.getElementById('pub-cde').textContent='Copier la description';
+  // V4 : photos réelles du produit (catalogue site) — la photo assignée (r.photo) est encadrée en premier
+  const pw=document.getElementById('pub-photos');
+  if(pw){
+    const prod=PRODS.find(p=>p.nom===r.produit&&p.dim===r.dim)||{nom:r.produit,dim:r.dim,prix:r.prix};
+    const m=(typeof matchSite==='function'&&CATSITE.length)?matchSite(prod):null;
+    const imgs=(m&&m.images&&m.images.length)?m.images:[];
+    if(imgs.length){
+      const li=(r.photo||'Photo A').replace('Photo ','').charCodeAt(0)-65;
+      const main=((li%imgs.length)+imgs.length)%imgs.length;
+      pw.style.display='block';
+      pw.innerHTML='<label class="publ">Photos du produit <span class="pubhint">— la 1ʳᵉ (encadrée) est la photo PRINCIPALE assignée à cette annonce ('+esc(r.photo||'')+') ; clic = ouvrir en grand pour l\'enregistrer</span></label>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        [main,...imgs.map((_,i)=>i).filter(i=>i!==main)].map((i,pos)=>`<a href="${esc(safeUrl(imgs[i]))}" target="_blank" rel="noopener" style="display:block;width:${pos===0?'110px':'72px'};height:${pos===0?'110px':'72px'};border-radius:8px;overflow:hidden;border:${pos===0?'3px solid var(--ac)':'1.5px solid var(--bd)'}"><img src="${esc(safeUrl(imgs[i]))}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></a>`).join('')+'</div>'+
+        (m&&m.url?`<div style="font-size:11px;margin-top:6px"><a href="${esc(safeUrl(m.url))}" target="_blank" rel="noopener" style="color:var(--ac)">↗ Fiche produit sur maxiconfort.fr</a></div>`:'');
+    }else{pw.style.display='none';pw.innerHTML='';}
+  }
   document.querySelectorAll('#pubbox .pubcopy').forEach(b=>b.classList.remove('done'));
   document.getElementById('pub-actions').innerHTML=r.validation==='ON'
     ?'<div style="text-align:center;color:var(--gn);font-weight:700;font-size:13px;padding:8px">✓ Déjà marquée comme publiée</div>'
@@ -1417,6 +1441,18 @@ function effWeight(p,ds){
   return Math.max(1,w);
 }
 function allocParams(){const a=PARAMS.allocation||{};return{champion:a.champion??50,fort:a.fort??25,normal:a.normal??15,explore:a.explore??10};}
+// ── Rentabilité estimée (règle Borhen 02/09) : achat HT ≈ 35 % du PV TTC pour TOUS les produits
+// (exemple donné : matelas vendu 99 € TTC acheté 35 € HT). Marge = PV HT − achat − livraison.
+function rentaParams(){const r=PARAMS.renta||{};return{achat_ratio:r.achat_ratio??0.35,livraison:r.livraison??35};}
+function rentaOf(p){
+  const R=rentaParams();
+  const pv=Number(p.prix)||0;if(!pv)return null;
+  const achat=Math.round(pv*R.achat_ratio*100)/100;
+  const pvht=pv/1.2, margeE=pvht-achat-R.livraison;
+  return{achat,pvht:Math.round(pvht*100)/100,margeE:Math.round(margeE*100)/100,margePct:Math.round(margeE/pvht*1000)/10,coef:Math.round(pv/achat*100)/100};
+}
+// Marge % à utiliser partout : la vraie si connue, sinon l'estimation ratio
+function margeOf(p){if(p.marge!=null&&p.marge!=='')return Number(p.marge);const r=rentaOf(p);return r?r.margePct:null;}
 // Séquence de produits pour nb créneaux : quotas par groupe + roulette pondérée + plafond 30 %/produit + exploration.
 function allocSequence(basePool,nb,ds,rng){
   const A=allocParams();
@@ -1489,7 +1525,8 @@ function computeScore(prod,villeTier,ville,ds){
   let s=0;
   s+=prod.priorite==='Très haute'?30:prod.priorite==='Moyenne'?8:18;            // potentiel produit
   s+=villeTier==='A'?25:villeTier==='C'?6:15;                                    // potentiel ville
-  s+=prod.marge!=null?Math.min(15,Math.round(prod.marge/3)):8;                   // marge (défaut milieu)
+  const mg=margeOf(prod);
+  s+=mg!=null?Math.max(0,Math.min(15,Math.round(mg/3))):8;                       // marge réelle ou estimée (ratio 35 %)
   // Fraîcheur : jours depuis la dernière publication de ce produit dans cette ville (fenêtre chargée)
   let last=null;const d0=new Date(ds+'T12:00:00');
   RECS.forEach(r=>{if(r.ville===ville&&r.produit===prod.nom&&r.dim===prod.dim&&r.date_pub&&r.date_pub!==ds){const dd=(d0-new Date(r.date_pub+'T12:00:00'))/86400000;if(dd>0&&(last===null||dd<last))last=dd;}});
@@ -1634,7 +1671,8 @@ function renderCatalogue(){
         <div class="pf">
           ${isAdmin()?`<div style="display:flex;flex-direction:column;gap:3px;width:100%">
             <div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px">Prix</span><input class="ci" type="number" value="${p.prix}" min="1" style="width:65px;color:var(--ac);font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','prix',parseFloat(this.value))" title="Modifier le prix"><span style="color:var(--ac);font-weight:800">€</span></div>
-            ${p.marge!=null?`<div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px">Marge</span><input class="ci" type="number" value="${p.marge||''}" min="0" max="100" step="0.1" style="width:65px;color:var(--gn);font-weight:700;font-size:13px;text-align:right" onchange="updProd('${p.id}','marge',parseFloat(this.value)||null)" placeholder="—"><span style="color:var(--gn);font-weight:700">%</span></div>`:''}
+            ${p.marge!=null?`<div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px">Marge</span><input class="ci" type="number" value="${p.marge||''}" min="0" max="100" step="0.1" style="width:65px;color:var(--gn);font-weight:700;font-size:13px;text-align:right" onchange="updProd('${p.id}','marge',parseFloat(this.value)||null)" placeholder="—"><span style="color:var(--gn);font-weight:700">%</span></div>`
+            :(()=>{const rE=rentaOf(p);return rE?`<div style="display:flex;align-items:center;gap:5px" title="Estimation ratio : achat ${rE.achat} € HT (35 % du PV TTC), livraison ${rentaParams().livraison} € → marge ${rE.margeE} €"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px">Marge</span><span style="font-size:12px;color:var(--gn);font-family:var(--m);font-weight:700">~${rE.margePct} % (${rE.margeE} €)</span></div>`:'';})()}
             <div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px" title="Poids de publication 0-100 : part des créneaux que reçoit ce produit">Poids</span><input class="ci" type="number" value="${prodPoids(p)}" min="0" max="100" style="width:65px;font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','poids',Math.max(0,Math.min(100,parseInt(this.value)||0)))"><span style="font-size:9px;font-family:var(--m);font-weight:700">${CLASS_BADGE[prodClass(p)]}</span></div>
             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
               <button class="btn" style="font-size:10px;padding:3px 8px;${boostActive(p)?'background:var(--am2);color:var(--am);border-color:rgba(245,158,11,.4)':''}" onclick="openBoost('${p.id}')" title="Augmenter temporairement la part de publications">${boostActive(p)?'🔥 +'+p.boost_pct+'% → '+p.boost_until:'🔥 Booster'}</button>
@@ -1696,7 +1734,12 @@ function clearAnnForm(){['av','adpt','adim','aprix','atitre','alib','anote'].for
 // RENTABILITÉ
 // ══════════════════════════════════════════════
 const RENTA_DATA=[{e:"Ens. 90x190-15cm",r:"MPP1590190",s:"SF952B-90190",pm:33.53,ps:29.94,pv:159,l:35,mg:25.7,c:2.09},{e:"Ens. 90x190-20cm",r:"MPP2090190",s:"SF952B-90190",pm:40.64,ps:29.94,pv:179,l:35,mg:29.2,c:2.11},{e:"Ens. 90x200-15cm",r:"MPP1590200",s:"SF952B-90200",pm:34.74,ps:31.12,pv:169,l:35,mg:28.4,c:2.14},{e:"Ens. 90x200-20cm",r:"MPP2090200",s:"SF952B-90200",pm:41.74,ps:31.12,pv:179,l:35,mg:27.7,c:2.05},{e:"Ens. 120x190",r:"MPP20120190",s:"SF952B-120190",pm:52.75,ps:34.22,pv:229,l:35,mg:36.1,c:2.19},{e:"Ens. 140x190-15cm",r:"MPP15140190",s:"SF952B-140190",pm:49.86,ps:36.83,pv:209,l:35,mg:30.1,c:2.01},{e:"Ens. 140x190-20cm",r:"MPP20140190",s:"SF952B-140190",pm:60.91,ps:36.83,pv:229,l:35,mg:30.4,c:1.95},{e:"Ens. 140x200",r:"MPP20140200",s:"SF952B-140200",pm:62.54,ps:38.07,pv:249,l:35,mg:34.6,c:2.06},{e:"Ens. 160x200",r:"MPP20160200",s:"SF952B-160200",pm:70.85,ps:41.55,pv:259,l:35,mg:31.7,c:1.92},{e:"Ens. 180x200",r:"MPP20180200",s:"SF952B-180200",pm:79.15,ps:50.70,pv:319,l:35,mg:38.0,c:2.05}];
-function renderRenta(){document.getElementById('rbody').innerHTML=RENTA_DATA.map((r,i)=>{const pt=(r.pm+r.ps).toFixed(2),pvh=(r.pv/1.2).toFixed(2),me=(r.pv/1.2-parseFloat(pt)-r.l).toFixed(2);return `<tr><td>${r.e}</td><td style="font-size:10px;color:var(--tx3)">${r.r}</td><td style="font-size:10px;color:var(--tx3)">${r.s}</td><td class="rpr">${r.pm.toFixed(2)}€</td><td class="rpr">${r.ps.toFixed(2)}€</td><td style="font-weight:700">${pt}€</td><td class="rpv"><input class="ci" type="number" value="${r.pv}" min="1" style="width:65px;color:var(--ac);font-weight:800;text-align:right" onchange="updRenta(${i},parseFloat(this.value))">&nbsp;€</td><td id="pvh${i}">${pvh}€</td><td>${r.l.toFixed(2)}€</td><td class="rmg" id="me${i}">${me}€</td><td class="rmg" style="font-weight:800" id="mp${i}">${r.mg.toFixed(1)}%</td><td class="rcf" id="cf${i}">${r.c.toFixed(2)}x</td></tr>`;}).join('');}
+function renderRenta(){
+  const R=rentaParams();
+  const b2=document.getElementById('rbody2');
+  if(b2)b2.innerHTML=PRODS.filter(p=>p.actif!==false&&p.prix>0).map(p=>{const e=rentaOf(p);if(!e)return'';
+    return `<tr><td>${esc(p.nom)}</td><td style="font-size:10px;color:var(--tx3)">${esc(p.dim||'')}</td><td class="rpv">${p.prix}€</td><td class="rpr">${e.achat}€</td><td>${e.pvht}€</td><td>${R.livraison}€</td><td class="rmg">${e.margeE}€</td><td class="rmg" style="font-weight:800;${e.margePct<15?'color:var(--rd)':''}">${e.margePct}%</td><td class="rcf">${e.coef}x</td></tr>`;}).join('');
+  document.getElementById('rbody').innerHTML=RENTA_DATA.map((r,i)=>{const pt=(r.pm+r.ps).toFixed(2),pvh=(r.pv/1.2).toFixed(2),me=(r.pv/1.2-parseFloat(pt)-r.l).toFixed(2);return `<tr><td>${r.e}</td><td style="font-size:10px;color:var(--tx3)">${r.r}</td><td style="font-size:10px;color:var(--tx3)">${r.s}</td><td class="rpr">${r.pm.toFixed(2)}€</td><td class="rpr">${r.ps.toFixed(2)}€</td><td style="font-weight:700">${pt}€</td><td class="rpv"><input class="ci" type="number" value="${r.pv}" min="1" style="width:65px;color:var(--ac);font-weight:800;text-align:right" onchange="updRenta(${i},parseFloat(this.value))">&nbsp;€</td><td id="pvh${i}">${pvh}€</td><td>${r.l.toFixed(2)}€</td><td class="rmg" id="me${i}">${me}€</td><td class="rmg" style="font-weight:800" id="mp${i}">${r.mg.toFixed(1)}%</td><td class="rcf" id="cf${i}">${r.c.toFixed(2)}x</td></tr>`;}).join('');}
 async function updRenta(i,v){if(isNaN(v)||v<=0)return;const r=RENTA_DATA[i];r.pv=v;const pt=r.pm+r.ps,pvh=v/1.2,me=pvh-pt-r.l,mg=me/pvh*100,cf=v/pt;r.mg=mg;r.c=cf;document.getElementById('pvh'+i).textContent=pvh.toFixed(2)+'€';document.getElementById('me'+i).textContent=me.toFixed(2)+'€';document.getElementById('mp'+i).textContent=mg.toFixed(1)+'%';document.getElementById('cf'+i).textContent=cf.toFixed(2)+'x';const p=PRODS.find(x=>x.ref===r.r);if(p){p.prix=v;p.marge=parseFloat(mg.toFixed(1));p.updated_at=new Date().toISOString();try{await sbUpsert('lbc_produits',[p]);}catch(e){}renderCatalogue();}const tr=document.getElementById('rbody').children[i];if(tr){tr.style.background='var(--gn2)';setTimeout(()=>tr.style.background='',800);}}
 
 // ══════════════════════════════════════════════
@@ -1804,12 +1847,21 @@ function renderAllocParams(){
   const A=allocParams();
   ['champion','fort','normal','explore'].forEach(k=>{const e=document.getElementById('pa-'+k);if(e)e.value=A[k];});
   const s=document.getElementById('pa-sum');if(s)s.textContent='Total : '+(A.champion+A.fort+A.normal+A.explore)+' % (idéal 100)';
+  const R=rentaParams();
+  const pr=document.getElementById('pr-ratio');if(pr)pr.value=Math.round(R.achat_ratio*100);
+  const pl=document.getElementById('pr-liv');if(pl)pl.value=R.livraison;
 }
 async function saveAlloc(){
   const val={};['champion','fort','normal','explore'].forEach(k=>val[k]=Math.max(0,Math.min(100,parseInt(document.getElementById('pa-'+k).value)||0)));
   PARAMS.allocation=val;renderAllocParams();
   showToast('⚙️ Réglages enregistrés','Champions '+val.champion+'% · Forts '+val.fort+'% · Normaux '+val.normal+'% · Exploration '+val.explore+'%');
   try{await sbUpsert('lbc_params',[{id:'allocation',val,updated_at:new Date().toISOString()}]);}catch(e){syncErr(e);}
+}
+async function saveRenta(){
+  const val={achat_ratio:Math.max(.05,Math.min(.9,(parseFloat(document.getElementById('pr-ratio').value)||35)/100)),livraison:Math.max(0,parseFloat(document.getElementById('pr-liv').value)||35)};
+  PARAMS.renta=val;renderCatalogue();renderRenta();
+  showToast('💶 Ratio enregistré','Achat '+Math.round(val.achat_ratio*100)+'% du PV TTC · livraison '+val.livraison+' €');
+  try{await sbUpsert('lbc_params',[{id:'renta',val,updated_at:new Date().toISOString()}]);}catch(e){syncErr(e);}
 }
 // ── V4 : catalogue site (lbc_catalogue_site, alimenté par le script de sync Shopify) ──
 function matchSite(p){
