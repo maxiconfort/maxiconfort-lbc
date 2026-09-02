@@ -377,8 +377,8 @@ tr:hover td{background:var(--sf2)}
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:11px;margin-bottom:15px">
         <div class="fgr"><label class="fl">À partir du</label><input class="fi" type="date" id="gw-date"></div>
         <div class="fgr"><label class="fl">Nb jours</label><select class="fi" id="gw-days"><option value="7" selected>7 jours</option><option value="5">5 jours</option><option value="3">3 jours</option><option value="1">1 jour</option></select></div>
-        <div class="fgr"><label class="fl">Annonces IDF/jour</label><input class="fi" type="number" id="gw-nidf" value="100" min="10" max="150"></div>
-        <div class="fgr"><label class="fl">Annonces Prov/jour</label><input class="fi" type="number" id="gw-nprov" value="100" min="10" max="150"></div>
+        <div class="fgr"><label class="fl">Annonces IDF/jour</label><input class="fi" type="number" id="gw-nidf" value="60" min="10" max="150"></div>
+        <div class="fgr"><label class="fl">Annonces Prov/jour</label><input class="fi" type="number" id="gw-nprov" value="40" min="10" max="150"></div>
         <div class="fgr"><label class="fl">Début</label><input class="fi" type="time" id="gw-start" value="08:00"></div>
         <div class="fgr"><label class="fl">Fin</label><input class="fi" type="time" id="gw-end" value="21:00"></div>
       </div>
@@ -394,7 +394,7 @@ tr:hover td{background:var(--sf2)}
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:11px">
         <div class="fgr"><label class="fl">Date *</label><input class="fi" type="date" id="gd-date"></div>
         <div class="fgr"><label class="fl">Zone</label><select class="fi" id="gd-zone"><option value="both">IDF + Province</option><option value="idf">🗼 IDF seulement</option><option value="prov">🚚 Province seulement</option></select></div>
-        <div class="fgr"><label class="fl">Nb annonces</label><input class="fi" type="number" id="gd-nb" value="100" min="10" max="150"></div>
+        <div class="fgr"><label class="fl">Nb annonces</label><input class="fi" type="number" id="gd-nb" value="60" min="10" max="150"></div>
         <div class="fgr"><label class="fl">Mode produits</label><select class="fi" id="gd-mode"><option value="mix">Mix équilibré</option><option value="ens">Ensembles prioritaires</option><option value="lits">Lits prioritaires</option><option value="mat">Matelas prioritaires</option></select></div>
       </div>
       <button class="btn p" style="margin-top:13px" onclick="genDay()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Générer ce jour</button>
@@ -917,8 +917,9 @@ function renderTable(){
       ${dC}
       <td style="font-size:12px;font-weight:500">${esc(r.produit)}</td>
       <td style="font-size:11px;color:var(--tx3);font-family:var(--m)">${esc(r.dim)}</td>
-      <td style="padding:4px 7px">${isAdmin()?`<input class="ci pi" type="number" value="${r.prix}" min="1" style="width:63px;font-size:13px;font-weight:800;text-align:right" onchange="patchPrix('${r.id}',this.value)">`:
-      `<span style="font-weight:800;font-size:13px;color:var(--ac);font-family:var(--m)">${r.prix}€</span>`}</td>
+      <td style="padding:4px 7px">${(()=>{const bad=prod&&prod.prix!=null&&Number(r.prix)!==Number(prod.prix);const warn=bad?`<span title="⚠ Prix catalogue : ${prod.prix}€ — cette annonce affiche un autre prix !" style="color:var(--rd);font-weight:800;cursor:help">⚠</span>`:'';
+      return isAdmin()?`<div style="display:flex;align-items:center;gap:2px">${warn}<input class="ci pi" type="number" value="${r.prix}" min="1" style="width:63px;font-size:13px;font-weight:800;text-align:right;${bad?'color:var(--rd)!important':''}" onchange="patchPrix('${r.id}',this.value)"></div>`:
+      `<span style="font-weight:800;font-size:13px;color:${bad?'var(--rd)':'var(--ac)'};font-family:var(--m)">${warn}${r.prix}€</span>`;})()}</td>
       ${mgC}
       <td><span class="bdg ${pb}">${r.priorite==='Très haute'?'⚡':r.priorite==='Haute'?'↑':'·'} ${r.priorite}</span></td>
       <td><div style="display:flex;align-items:flex-start;gap:6px"><div style="flex:1;min-width:0"><div class="tm" title="${esc(r.titre)}" style="max-width:190px;user-select:text;cursor:text">${esc(r.titre)}</div><div class="ts"><span>${r.photo}</span><span>${r.texte}</span></div></div>
@@ -1025,10 +1026,11 @@ const TEXTES=['Texte A','Texte B','Texte C','Texte D','Texte E','Texte F'];
 // PRNG déterministe : même id => même contenu (stable), mais varié d'une annonce à l'autre.
 function seedRand(str){str=String(str);let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return function(){h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);h^=h>>>16;return (h>>>0)/4294967296;};}
 const _pick=(rng,a)=>a[Math.floor(rng()*a.length)];
-const ACCROCHES=['Neuf','Promo','Déstockage','Arrivage','Offre','Bon plan','À saisir','Nouveau','Top affaire','Liquidation','Exclusif','Fin de série'];
+// Règles 21/08 : produits NEUFS → aucun vocabulaire d'occasion/liquidation dans les titres.
+const ACCROCHES=['Neuf','Promo','Arrivage','Offre','Bon plan','À saisir','Nouveau','Top affaire','Exclusif','Stock disponible'];
 const BENEFS_IDF=['livraison rapide','livraison offerte','dispo immédiate','stock dispo','direct entrepôt','qualité garantie','prix direct','installation possible'];
 const BENEFS_PROV=['livraison France entière','livré chez vous','expédition rapide','direct fabricant','partout en France','colis suivi','livraison à domicile'];
-const FINS=['à ne pas manquer','pour tout budget','idéal chambre','confort garanti','neuf sous emballage','jamais utilisé','qualité pro','meilleur rapport qualité-prix'];
+const FINS=['à ne pas manquer','pour tout budget','idéal chambre','confort garanti','neuf sous emballage','qualité pro','meilleur rapport qualité-prix','prêt à dormir'];
 function genTitre(nom,dim,ville,isPr,seed){
   const rng=seedRand(seed||(nom+'|'+dim+'|'+ville));
   const b=isPr?BENEFS_PROV:BENEFS_IDF;
@@ -1042,7 +1044,8 @@ function genTitre(nom,dim,ville,isPr,seed){
     ()=>`${nom} ${dim} ${_pick(rng,FINS)} ${ville}`,
   ];
   let t=_pick(rng,S)().replace(/\s+/g,' ').trim();
-  if(t.length>80){t=t.slice(0,80);const sp=t.lastIndexOf(' ');if(sp>40)t=t.slice(0,sp);}
+  // LBC autorise 200 caractères de titre (vérifié 27/04/2026) — on vise ~120 utiles, lisibles.
+  if(t.length>120){t=t.slice(0,120);const sp=t.lastIndexOf(' ');if(sp>60)t=t.slice(0,sp);}
   return t;
 }
 function parseDim(dim){
@@ -1212,11 +1215,32 @@ function genDescription(r){
 
 function getProdPool(isPr,mode){
   let pool=isPr?PRODS.filter(p=>p.cat==='Matelas seul Province'&&/matelas/i.test(p.nom)):PRODS.filter(p=>p.cat!=='Matelas seul Province'&&p.prix>0);
+  // Règle Borhen 02/09/2026 : le canapé Cozy se livre UNIQUEMENT en Île-de-France — jamais en Province.
+  if(isPr)pool=pool.filter(p=>!/canap/i.test(p.nom)&&p.cat!=='Canapé');
+  // Produits désactivés (colonne optionnelle lbc_produits.actif) : exclus de la génération.
+  pool=pool.filter(p=>p.actif!==false);
   if(!pool.length)pool=PRODS;
   if(mode==='ens')return[...pool].sort((a,b)=>a.nom.toLowerCase().includes('ensemble')?-1:1);
   if(mode==='lits')return[...pool].sort((a,b)=>(a.nom.toLowerCase().includes('nico')||a.nom.toLowerCase().includes('coffre'))?-1:1);
   if(mode==='mat')return[...pool].sort((a,b)=>a.nom.toLowerCase().includes('matelas')?-1:1);
   return pool;
+}
+// ── P0 : pondération par priorité — un produit « Très haute » reçoit 3x plus de créneaux qu'un « Moyenne » ──
+function weightPool(pool){
+  const out=[];
+  pool.forEach(p=>{const w=p.priorite==='Très haute'?3:p.priorite==='Moyenne'?1:2;for(let i=0;i<w;i++)out.push(p);});
+  return out;
+}
+// ── P0 : anti-répétition inter-jours — combos produit×ville publiés à ±7 jours de la date générée ──
+function recentCombos(ds){
+  const d0=new Date(ds+'T12:00:00');
+  const s=new Set();
+  RECS.forEach(r=>{
+    if(!r.date_pub||r.date_pub===ds)return;
+    const dd=Math.abs((new Date(r.date_pub+'T12:00:00')-d0)/86400000);
+    if(dd<7)s.add(r.ville+'|'+r.produit+'|'+r.dim);
+  });
+  return s;
 }
 function getVP(nb,isPr){
   const map=isPr?VILLES_PROV:VILLES_IDF,zones=Object.keys(map);
@@ -1228,15 +1252,25 @@ function getVP(nb,isPr){
 function buildDay(ds,nb,st,en,mode,isPr){
   const interval=Math.floor((t2m(en)-t2m(st))/nb);
   const prefix=isPr?`PROV-${ds}-`:`IDF-${ds}-`;
-  const pool=getProdPool(isPr,mode),villes=getVP(nb,isPr);
+  const basePool=getProdPool(isPr,mode),pool=weightPool(basePool),villes=getVP(nb,isPr);
   const used=new Set(),out=[];
+  const recent=recentCombos(ds); // combos produit×ville des 7 derniers jours → interdits (anti-cannibalisation)
   let pi=0,phi=0,txi=0;
   for(let i=0;i<nb;i++){
     const{ville,dept,zone}=villes[i];
     const heure=m2t(t2m(st)+i*interval);
     const id=prefix+String(i+1).padStart(3,'0');
-    let prod=null,tries=0;
-    while(tries<pool.length){const c=pool[(pi+tries)%pool.length];const k=`${zone}|${c.ref||c.nom+c.dim}`;if(!used.has(k)){prod=c;used.add(k);pi=(pi+tries+1)%pool.length;break;}tries++;}
+    let prod=null,tries=0,fallback=null;
+    while(tries<pool.length){
+      const c=pool[(pi+tries)%pool.length];
+      const k=`${zone}|${c.ref||c.nom+c.dim}`;
+      if(!used.has(k)){
+        if(!recent.has(ville+'|'+c.nom+'|'+c.dim)){prod=c;used.add(k);pi=(pi+tries+1)%pool.length;break;}
+        if(!fallback)fallback=c; // premier candidat libre du jour, même si vu récemment (secours)
+      }
+      tries++;
+    }
+    if(!prod&&fallback){prod=fallback;used.add(`${zone}|${fallback.ref||fallback.nom+fallback.dim}`);pi=(pi+1)%pool.length;}
     if(!prod){prod=pool[pi%pool.length];pi=(pi+1)%pool.length;}
     const photo=PHOTOS[phi%PHOTOS.length];phi++;
     const texte=TEXTES[txi%TEXTES.length];txi++;
