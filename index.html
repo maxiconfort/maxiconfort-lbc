@@ -1049,6 +1049,11 @@ async function toggleVal(id){
 }
 async function pF(id,key,val){
   const r=RECS.find(x=>x.id===id);if(!r)return;
+  // Le lien doit être celui de l'ANNONCE publiée, pas la page de confirmation du dépôt
+  // (constat 02/09 : tous les liens collés étaient /deposer-une-annonce/confirmation → inutilisables).
+  if(key==='lien'&&/deposer-une-annonce|confirmation/i.test(String(val))){
+    showToast('⚠ Mauvais lien','Ceci est la page de confirmation. Ouvre l\'annonce publiée (Mes annonces) et copie SON adresse.','am');
+  }
   r[key]=val;r.updated_at=new Date().toISOString();saveLocal();
   try{await sbPatch('lbc_annonces',id,{[key]:val,updated_at:r.updated_at});}catch(e){syncErr(e);}
 }
