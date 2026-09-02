@@ -1116,10 +1116,22 @@ function openPublier(id){
   document.querySelectorAll('#pubbox .pubcopy').forEach(b=>b.classList.remove('done'));
   document.getElementById('pub-actions').innerHTML=r.validation==='ON'
     ?'<div style="text-align:center;color:var(--gn);font-weight:700;font-size:13px;padding:8px">✓ Déjà marquée comme publiée</div>'
-    :`<button class="pubpub" onclick="toggleVal('${r.id}');closePublier();">✓ J'ai publié — marquer ON</button>`;
+    :`<button class="pubpub" onclick="donePublier('${r.id}')">✓ J'ai publié — annonce suivante →</button>`;
   document.getElementById('pubov').style.display='flex';
 }
 function closePublier(){document.getElementById('pubov').style.display='none';}
+// V4.2 : mode enchaîné — après « J'ai publié », l'annonce SUIVANTE du jour s'ouvre toute seule.
+// Le flux collaboratrice devient : copier titre → copier description → publier → clic → suivante.
+function donePublier(id){
+  toggleVal(id);
+  const r=RECS.find(x=>x.id===id);
+  const day=(isAdmin()?getZoneRecs(RECS.filter(x=>x.date_pub===CUR)):getMyRecs().filter(x=>x.date_pub===CUR))
+    .filter(x=>x.validation!=='ON'&&x.statut!=='Bloqué'&&x.id!==id)
+    .sort((a,b)=>(a.heure||'').localeCompare(b.heure||''));
+  const next=day.find(x=>(x.heure||'')>=((r&&r.heure)||''))||day[0];
+  if(next){setTimeout(()=>openPublier(next.id),150);}
+  else{closePublier();showToast('🎉 Journée terminée !','Toutes les annonces du jour sont publiées — bravo');}
+}
 // ── P1 : saisie des performances (vues/messages/appels/vente) — la boucle d'apprentissage ──
 let PERF_ID=null;
 function openPerf(id){
