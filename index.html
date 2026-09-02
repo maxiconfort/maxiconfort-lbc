@@ -463,7 +463,7 @@ tr:hover td{background:var(--sf2)}
       </div>
     </div>
     <div class="gen-card">
-      <div class="gen-t">🔄 Catalogue maxiconfort.fr <span id="cs-info" style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)"></span></div>
+      <div class="gen-t" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">🔄 Catalogue maxiconfort.fr <span id="cs-info" style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)"></span><button class="btn" style="font-size:11px;padding:4px 10px" onclick="verifCatSite()">🔄 Vérifier maxiconfort.fr</button></div>
       <div id="dash-catsite" style="font-size:12px"></div>
     </div>
     <div class="gen-card">
@@ -1893,7 +1893,7 @@ function comboStats(){
 function renderCombos(){
   const t=document.getElementById('dash-combo-top'),f=document.getElementById('dash-combo-flop');if(!t)return;
   const all=comboStats().filter(x=>x.a.n>=3);
-  const line=x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.k)}</span><span style="font-family:var(--m);white-space:nowrap;color:var(--tx2)"><b style="color:${x.score>=70?'var(--gn)':x.score>=45?'var(--am)':'var(--rd)'}">${x.score}</b>/100 · ${x.a.n} pubs · ${x.a.contacts}💬 ${x.a.ventes}🛒 · ${sampleLabel(x.a.n)}</span></div>`;
+  const line=x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.k)}</span><span style="font-family:var(--m);white-space:nowrap;color:var(--tx2)"><b style="color:${x.score>=70?'var(--gn)':x.score>=45?'var(--am)':'var(--rd)'}">${x.score}</b>/100 · ${x.a.n} pubs · ${(x.a.contacts/x.a.n*100).toFixed(0)}💬/100 · ${x.a.ventes}🛒 · ${sampleLabel(x.a.n)}</span></div>`;
   const top=all.sort((a,b)=>b.score-a.score).slice(0,10);
   t.innerHTML=top.length?top.map(line).join(''):'<span style="color:var(--tx3)">Minimum 3 publications par combinaison — les données arrivent avec mes relevés quotidiens.</span>';
   const flop=all.filter(x=>x.a.n>=5&&x.a.contacts===0).sort((a,b)=>b.a.n-a.a.n).slice(0,5);
@@ -1920,22 +1920,25 @@ function genFromReco(){
   genWeek('both');
   showToast('⚡ Génération lancée','Planning de demain ('+ds+') selon les recommandations du moteur');
 }
-// ── V4-OPT : meilleurs horaires (échantillon affiché, pas de conclusion sur 3 annonces) ──
+// ── V4-OPT : meilleurs horaires PAR ZONE (échantillon affiché, pas de conclusion sur 3 annonces) ──
 function renderHoraires(){
   const el=document.getElementById('dash-horaires');if(!el)return;
   const buckets={'Matin 8-11h':[8,10],'Midi 11-14h':[11,13],'Après-midi 14-17h':[14,16],'Fin de journée 17-19h':[17,18],'Soir 19-21h':[19,21]};
+  const zone=(name,recs)=>{
+    const rows=Object.entries(buckets).map(([lbl,[h1,h2]])=>{
+      const rr=recs.filter(r=>{const h=parseInt(r.heure);return h>=h1&&h<=h2;});
+      const a=perfAggOf(rr);
+      return{lbl,a,rate:a.n?a.contacts/a.n:0};
+    });
+    const max=Math.max(...rows.map(x=>x.rate),0.001);
+    return `<div style="font-weight:800;font-size:11px;margin:8px 0 2px;color:var(--tx2)">${name}</div>`+rows.map(x=>{
+      const verdict=x.a.n<10?'⚠️ insuffisant':x.rate>=max*.8?'⭐ excellent':x.rate>=max*.5?'👍 bon':'· moyen';
+      return `<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid var(--bd)"><span>${x.lbl}</span><span style="font-family:var(--m);color:var(--tx2)">${x.a.n} obs · ${(x.rate*100).toFixed(0)}💬/100 · ${verdict}</span></div>`;
+    }).join('');
+  };
   const pub=RECS.filter(r=>r.validation==='ON');
-  const rows=Object.entries(buckets).map(([lbl,[h1,h2]])=>{
-    const recs=pub.filter(r=>{const h=parseInt(r.heure);return h>=h1&&h<=h2;});
-    const a=perfAggOf(recs);
-    return{lbl,a,rate:a.n?a.contacts/a.n:0};
-  });
-  const max=Math.max(...rows.map(x=>x.rate),0.001);
-  el.innerHTML=rows.map(x=>{
-    const ok=x.a.n>=10;
-    const verdict=!ok?'⚠️ insuffisant':x.rate>=max*.8?'⭐ excellent':x.rate>=max*.5?'👍 bon':'· moyen';
-    return `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)"><span>${x.lbl}</span><span style="font-family:var(--m);color:var(--tx2)">${x.a.n} pubs · ${(x.rate*100).toFixed(0)}💬/100 · ${verdict}</span></div>`;
-  }).join('')+'<div style="font-size:10px;color:var(--tx3);margin-top:6px;font-family:var(--m)">Verdict uniquement à partir de 10 publications par créneau.</div>';
+  el.innerHTML=zone('🗼 Île-de-France',pub.filter(r=>r.dept!=='PROV'))+zone('🚚 Province',pub.filter(r=>r.dept==='PROV'))+
+    '<div style="font-size:10px;color:var(--tx3);margin-top:6px;font-family:var(--m)">Verdict uniquement à partir de 10 observations par créneau.</div>';
 }
 // ── V4-OPT : A/B des familles de titres ──
 function renderTitres(){
@@ -2021,6 +2024,15 @@ async function saveRenta(){
   PARAMS.renta=val;renderCatalogue();renderRenta();
   showToast('💶 Ratio enregistré','Achat '+Math.round(val.achat_ratio*100)+'% du PV TTC · livraison '+val.livraison+' €');
   try{await sbUpsert('lbc_params',[{id:'renta',val,updated_at:new Date().toISOString()}]);}catch(e){syncErr(e);}
+}
+// ── V4-OPT : bouton « Vérifier maxiconfort.fr » — recharge la table site et annonce le nombre de changements ──
+async function verifCatSite(){
+  setLd(true,'Vérification du catalogue maxiconfort.fr...');
+  try{const cs=await sbGet('lbc_catalogue_site','select=*&limit=300');if(cs&&cs.length)CATSITE=cs;}catch(e){}
+  setLd(false);
+  renderCatSite();
+  const n=(document.getElementById('dash-catsite').innerHTML.match(/écart\(s\) détecté/)? (document.getElementById('dash-catsite').innerHTML.match(/⚠ (\d+) écart/)||[0,0])[1] : 0);
+  showToast('🔄 Vérification terminée',(n>0?n+' changement(s) détecté(s) — validez ci-dessous':'Aucun changement à valider'));
 }
 // ── V4 : catalogue site (lbc_catalogue_site, alimenté par le script de sync Shopify) ──
 function matchSite(p){
