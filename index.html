@@ -1,4 +1,4 @@
-<!-- MAXICONFORT LBC v3.0 -->
+<!-- MAXICONFORT LBC v4.5 -->
 <!DOCTYPE html>
 <html lang="fr" data-theme="light">
 <head>
@@ -244,7 +244,7 @@ tr:hover td{background:var(--sf2)}
   <div class="lb">
     <div class="lic">MC</div>
     <div class="lt">Maxiconfort LBC</div>
-    <div class="ls2">Gestionnaire publications v3</div>
+    <div class="ls2">Gestionnaire publications v4.5 — moteur 7/30/90 j</div>
     <div id="acc-fields">
       <label class="ll">Email du compte</label>
       <input class="li lim" id="email" type="email" placeholder="email@exemple.fr" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
@@ -362,7 +362,9 @@ tr:hover td{background:var(--sf2)}
       <div class="fgr" id="ap-mg-g" style="display:none"><label class="fl">Marge %</label><input class="fi" id="apm" type="number" placeholder="30" step="0.1"></div>
       <div class="fgr"><label class="fl">Réf.</label><input class="fi" id="apr" type="text" placeholder="REF-001"></div>
       <div class="fgr"><label class="fl">Catégorie *</label><select class="fi" id="apc"><option>Ensemble matelas + sommier</option><option>Lit coffre premium</option><option>Matelas seul</option><option>Matelas seul Province</option><option>Sommier tapissier seul</option><option>Lit Nico</option><option>Lit superposé</option><option>Canapé</option><option>Autre</option></select></div>
-      <div class="fgr"><label class="fl">Priorité pub.</label><select class="fi" id="appri"><option value="Très haute">Très haute</option><option value="Haute" selected>Haute</option><option value="Moyenne">Moyenne</option></select></div>
+      <div class="fgr"><label class="fl" title="Contrainte de livraison — où ce produit PEUT être vendu">Disponibilité</label><div style="display:flex;gap:10px;align-items:center;padding:8px 0;font-size:12px;font-weight:700"><label style="display:flex;gap:4px;align-items:center;cursor:pointer"><input type="checkbox" id="ap-zidf" checked style="accent-color:var(--ac)">🗼 IDF</label><label style="display:flex;gap:4px;align-items:center;cursor:pointer"><input type="checkbox" id="ap-zprov" checked style="accent-color:var(--gn)">🚚 Province</label></div></div>
+      <div class="fgr"><label class="fl" title="Décision stratégique 0-100 — combien le moteur doit le publier en IDF (25 = TEST recommandé pour un nouveau produit)">Pression IDF</label><input class="fi" id="ap-pidf" type="number" min="0" max="100" value="25"></div>
+      <div class="fgr"><label class="fl" title="Décision stratégique 0-100 — combien le moteur doit le publier en Province">Pression Province</label><input class="fi" id="ap-pprov" type="number" min="0" max="100" value="25"></div>
     </div>
     <div style="display:flex;gap:7px"><button class="btn p" onclick="addProd()">+ Ajouter</button><button class="btn" onclick="clearAP()">Vider</button></div>
   </div></div>
@@ -426,8 +428,9 @@ tr:hover td{background:var(--sf2)}
 <div id="panel-pilotage" class="panel">
   <div style="padding:9px 20px;background:var(--sf2);border-bottom:1px solid var(--bd)"><button class="btn gh" onclick="goTab('calendrier')" style="font-size:12px;font-weight:700">← Calendrier</button></div>
   <div style="padding:20px;max-width:980px">
-    <div class="ft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Pilotage — tunnel des 14 derniers jours</div>
+    <div class="ft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Pilotage — horizons 7 / 30 / 90 jours</div>
     <div id="dash-tiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:12px"></div>
+    <div id="dash-horizons" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;font-family:var(--m)"></div>
     <div id="dash-kpi100" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:18px"></div>
     <div class="gen-card" style="border-top:3px solid var(--ac)">
       <div class="gen-t">⚡ Recommandation pour demain <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">répartition calculée par le moteur (poids × perf × boosts)</span></div>
@@ -1816,13 +1819,13 @@ function renderCatalogue(){
             <div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px">Prix</span><input class="ci" type="number" value="${p.prix}" min="1" style="width:65px;color:var(--ac);font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','prix',parseFloat(this.value))" title="Modifier le prix"><span style="color:var(--ac);font-weight:800">€</span></div>
             ${p.marge!=null?`<div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px">Marge</span><input class="ci" type="number" value="${p.marge||''}" min="0" max="100" step="0.1" style="width:65px;color:var(--gn);font-weight:700;font-size:13px;text-align:right" onchange="updProd('${p.id}','marge',parseFloat(this.value)||null)" placeholder="—"><span style="color:var(--gn);font-weight:700">%</span></div>`
             :(()=>{const rE=rentaOf(p);return rE?`<div style="display:flex;align-items:center;gap:5px" title="Estimation ratio : achat ${rE.achat} € HT (35 % du PV TTC), livraison ${rentaParams().livraison} € → marge ${rE.margeE} €"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:34px">Marge</span><span style="font-size:12px;color:var(--gn);font-family:var(--m);font-weight:700">~${rE.margePct} % (${rE.margeE} €)</span></div>`:'';})()}
-            ${(p.zone_pub||'both')!=='prov'?`<div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:52px" title="Pression de publication IDF 0-100 (stratégie, pas contrainte)">🗼 Press.</span><input class="ci" type="number" value="${prodPoidsZone(p,false)}" min="0" max="100" style="width:55px;font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','poids_idf',Math.max(0,Math.min(100,parseInt(this.value)||0)));renderCatalogue()"><span style="font-size:9px;font-family:var(--m);font-weight:700">${CLASS_BADGE[prodClass(p,false)]}</span></div>`:''}
-            ${(p.zone_pub||'both')!=='idf'?`<div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:52px" title="Pression de publication Province 0-100 (stratégie, pas contrainte)">🚚 Press.</span><input class="ci" type="number" value="${prodPoidsZone(p,true)}" min="0" max="100" style="width:55px;font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','poids_prov',Math.max(0,Math.min(100,parseInt(this.value)||0)));renderCatalogue()"><span style="font-size:9px;font-family:var(--m);font-weight:700">${CLASS_BADGE[prodClass(p,true)]}</span></div>`:''}
+            ${(p.zone_pub||'both')!=='prov'?`<div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:52px" title="Pression de publication IDF 0-100 (stratégie, pas contrainte)">🗼 Pression</span><input class="ci" type="number" value="${prodPoidsZone(p,false)}" min="0" max="100" style="width:55px;font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','poids_idf',Math.max(0,Math.min(100,parseInt(this.value)||0)));renderCatalogue()"><span style="font-size:9px;font-family:var(--m);font-weight:700">${CLASS_BADGE[prodClass(p,false)]}</span></div>`:''}
+            ${(p.zone_pub||'both')!=='idf'?`<div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:52px" title="Pression de publication Province 0-100 (stratégie, pas contrainte)">🚚 Pression</span><input class="ci" type="number" value="${prodPoidsZone(p,true)}" min="0" max="100" style="width:55px;font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','poids_prov',Math.max(0,Math.min(100,parseInt(this.value)||0)));renderCatalogue()"><span style="font-size:9px;font-family:var(--m);font-weight:700">${CLASS_BADGE[prodClass(p,true)]}</span></div>`:''}
             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
               <button class="btn" style="font-size:10px;padding:3px 8px;${boostActive(p)?'background:var(--am2);color:var(--am);border-color:rgba(245,158,11,.4)':''}" onclick="openBoost('${p.id}')" title="Augmenter temporairement la part de publications">${boostActive(p)?'🔥 +'+p.boost_pct+'% → '+p.boost_until:'🔥 Booster'}</button>
               <span style="font-size:9px;color:var(--tx3);font-family:var(--m)" title="Publications planifiées sur les 7 derniers jours">${RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim&&r.date_pub>=fmtDate(addDays(new Date(),-7))&&r.date_pub<=fmtDate(new Date())).length} pubs/7j</span>
             </div>
-            <div style="display:flex;align-items:center;gap:9px;font-size:10px;font-family:var(--m);font-weight:600" title="CONTRAINTE de livraison (pas un choix stratégique) — pour réduire un produit faible, baissez son poids">
+            <div style="display:flex;align-items:center;gap:9px;font-size:10px;font-family:var(--m);font-weight:600" title="CONTRAINTE de livraison (pas un choix stratégique) — pour réduire un produit faible, baissez sa pression"><span style="color:var(--tx3);width:52px">Dispo</span>
               <label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" ${(p.zone_pub||'both')!=='prov'?'checked':''} onchange="updZonePub('${p.id}','idf',this.checked)" style="accent-color:var(--ac)">🗼 IDF</label>
               <label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" ${(p.zone_pub||'both')!=='idf'?'checked':''} onchange="updZonePub('${p.id}','prov',this.checked)" style="accent-color:var(--gn)">🚚 Province</label>
             </div>
@@ -1835,14 +1838,17 @@ function renderCatalogue(){
                 const n=hist.length, sc=n?perfScore100(perfAggOf(hist),p):null;
                 const w0=prodPoidsZone(p,isPr), we=effWeight(p,today,isPr), mult=(we/Math.max(1,w0)).toFixed(1);
                 let dec,decC;
+                const d7r=fmtDate(addDays(new Date(),-7));
+                const dormant=!RECS.some(r=>r.produit===p.nom&&r.dim===p.dim&&r.date_pub>=d7r&&(isPr?r.dept==='PROV':r.dept!=='PROV'));
                 if(n<10){dec='🧪 TEST';decC='var(--tx2)';}
+                else if(sc!=null&&sc<45&&dormant){dec='🔁 RE-TEST';decC='var(--am)';}
                 else if(we>w0*1.25){dec='↑ AUGMENTER';decC='var(--gn)';}
                 else if(we<w0*0.75){dec='↓ RÉDUIRE';decC='var(--am)';}
                 else{dec='→ MAINTENIR';decC='var(--ac)';}
                 const col=isPr?'poids_prov':'poids_idf';
                 return `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px">
                   <span style="width:20px">${isPr?'🚚':'🗼'}</span>
-                  <span style="color:var(--tx3)">${sc!=null?'<b>'+sc+'</b>/100':'—'} · ${n} pubs · ×${mult}</span>
+                  <span style="color:var(--tx3)">${sc!=null?'<b>'+sc+'</b>/100':'—'} · ${sampleLabel(n)} (${n}) · ×${mult}</span>
                   <b style="color:${decC}">${dec}</b>
                   ${n>=10&&dec!=='→ MAINTENIR'?`<button class="btn" style="font-size:9px;padding:1px 5px" title="Graver la pression moteur" onclick="updProd('${p.id}','${col}',${Math.max(5,Math.min(100,we))});renderCatalogue()">✔</button>`:''}
                   <button class="btn" style="font-size:9px;padding:1px 5px" title="Forcer champion (90)" onclick="updProd('${p.id}','${col}',90);renderCatalogue()">🔥</button>
@@ -1878,9 +1884,13 @@ function updZonePub(id,zone,checked){
 async function delProd(id){if(!confirm('Supprimer ce produit ?'))return;PRODS=PRODS.filter(p=>p.id!==id);buildProdSelect();renderCatalogue();try{await sbDelete('lbc_produits',id);}catch(e){syncErr(e);}}
 function toggleAddProd(){const w=document.getElementById('apwrap'),b=document.getElementById('btn-addprod');const open=w.style.display==='block';w.style.display=open?'none':'block';b.textContent=open?'+ Produit':'✕ Fermer';b.className=open?'btn p':'btn d';}
 async function addProd(){
-  const n=document.getElementById('apn').value.trim(),d=document.getElementById('apd').value.trim(),p=parseFloat(document.getElementById('app2').value)||0,m=parseFloat(document.getElementById('apm').value)||null,r=document.getElementById('apr').value.trim(),c=document.getElementById('apc').value,pri=document.getElementById('appri').value;
+  const n=document.getElementById('apn').value.trim(),d=document.getElementById('apd').value.trim(),p=parseFloat(document.getElementById('app2').value)||0,m=parseFloat(document.getElementById('apm').value)||null,r=document.getElementById('apr').value.trim(),c=document.getElementById('apc').value;
   if(!n||!p){showToast('⚠ Nom et Prix obligatoires','','am');return;}
-  const np={id:'P'+Date.now(),nom:n,dim:d,prix:p,marge:m,ref:r,cat:c,priorite:pri,updated_at:new Date().toISOString()};
+  const zi=document.getElementById('ap-zidf')?.checked!==false,zp=document.getElementById('ap-zprov')?.checked!==false;
+  if(!zi&&!zp){showToast('⚠ Au moins une zone de disponibilité','','am');return;}
+  const pidf=Math.max(0,Math.min(100,parseInt(document.getElementById('ap-pidf')?.value)||25));
+  const pprov=Math.max(0,Math.min(100,parseInt(document.getElementById('ap-pprov')?.value)||25));
+  const np={id:'P'+Date.now(),nom:n,dim:d,prix:p,marge:m,ref:r,cat:c,priorite:'Haute',poids:Math.round((pidf+pprov)/2),poids_idf:pidf,poids_prov:pprov,zone_pub:zi&&zp?'both':zi?'idf':'prov',actif:true,updated_at:new Date().toISOString()};
   PRODS.push(np);buildProdSelect();renderCatalogue();
   const fl=document.getElementById('apfl');fl.textContent='✓ Produit ajouté : '+n;fl.style.display='block';setTimeout(()=>fl.style.display='none',3000);
   clearAP();try{await sbUpsert('lbc_produits',[np]);}catch(e){syncErr(e);}
@@ -1972,7 +1982,7 @@ function renderDash(){
   if(zsel&&zsel.options.length<=1&&VILLES_DB){[...new Set(VILLES_DB.map(v=>v.zone))].sort().forEach(z=>{const o=document.createElement('option');o.value=z;o.textContent=z;zsel.appendChild(o);});}
   renderDashVilles();
   renderPush();renderDecisions();renderAllocParams();renderCatSite();
-  renderKPI100();renderCombos();renderReco();renderHoraires();renderTitres();renderDepts();
+  renderHorizons();renderKPI100();renderCombos();renderReco();renderHoraires();renderTitres();renderDepts();
 }
 // ── Vue par département IDF : meilleur produit/dimension, contacts et ventes pour 100 annonces ──
 function renderDepts(){
@@ -1992,6 +2002,14 @@ function renderDepts(){
       <td style="font-family:var(--m);color:var(--gn);font-weight:700">${x.a.n?(x.a.ventes/x.a.n*100).toFixed(1):'—'}</td><td style="font-family:var(--m);color:var(--gn)">${x.a.n?(x.a.ca/x.a.n*100).toFixed(0)+' €':'—'}</td>
       <td style="font-size:11px">${x.best?esc(x.best.k)+' ('+x.best.a.contacts+'💬 '+x.best.a.ventes+'🛒)':'<span style="color:var(--tx3)">pas assez de données</span>'}</td>
       <td style="font-size:10px;font-family:var(--m);color:var(--tx3)">${sampleLabel(x.a.n)}</td></tr>`).join('')+'</tbody></table>';
+}
+// ── FIABILISATION : bandeau des 3 horizons (agrégats Supabase, tous produits confondus) ──
+function renderHorizons(){
+  const el=document.getElementById('dash-horizons');if(!el)return;
+  if(!PERF_AGG.length){el.innerHTML='<span style="color:var(--tx3)">Horizons 7/30/90 j : agrégats non chargés — resynchronisez (⟳).</span>';return;}
+  const S=k=>PERF_AGG.reduce((s,a)=>s+(Number(a[k])||0),0);
+  const box=(lbl,n,c,v,w)=>`<div style="background:var(--sf);border:1.5px solid var(--bd);border-radius:var(--r);padding:8px 14px" title="Pondération dans le score global : ${w}"><b>${lbl}</b> · ${n} pubs · <span style="color:var(--ac)">${n?(c/n*100).toFixed(0):'—'}💬/100</span> · <span style="color:var(--gn)">${v}🛒</span> · <span style="color:var(--tx3)">${sampleLabel(n)}</span></div>`;
+  el.innerHTML=box('⚡ 7 j',S('n7'),S('c7'),S('v7'),'50 %')+box('📊 30 j',S('n30'),S('c30'),S('v30'),'30 %')+box('📚 90 j',S('n90'),S('c90'),S('v90'),'20 %');
 }
 // ── V4-OPT : l'indicateur le plus important — CONTACTS / VENTES / MARGE pour 100 annonces ──
 function renderKPI100(){
