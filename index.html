@@ -554,7 +554,7 @@ const ANON = 'sb_publishable_cRPSD97LDH0beIID1Wecxw_xY7cEAeX';
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
-let ROLE=null,TOKEN=null,RTOKEN=null,RECS=[],PRODS=[],VILLES_DB=null,CATSITE=[],PARAMS={},CUR=null,WOFF=0,ZONE='all',CAT_F='all',FIDS=[],SYNC_T=null,LAST_SYNC=null,SYNCING=false;
+let ROLE=null,TOKEN=null,RTOKEN=null,RECS=[],PRODS=[],VILLES_DB=null,CATSITE=[],PARAMS={},PERF_AGG=[],PERF_VILLE=[],CUR=null,WOFF=0,ZONE='all',CAT_F='all',FIDS=[],SYNC_T=null,LAST_SYNC=null,SYNCING=false;
 
 // ══════════════════════════════════════════════
 // SUPABASE
@@ -749,6 +749,8 @@ async function init(){
     // V4 : paramètres moteur + catalogue site maxiconfort.fr (62 variantes, quelques Ko)
     try{const pp=await sbGet('lbc_params','select=*');(pp||[]).forEach(p=>PARAMS[p.id]=p.val);}catch(e){}
     try{const cs=await sbGet('lbc_catalogue_site','select=*&limit=300');if(cs)CATSITE=cs;}catch(e){}
+    try{const pa=await sbGet('lbc_perf_agg','select=*');if(pa)PERF_AGG=pa;}catch(e){}
+    try{const pv=await sbGet('lbc_perf_ville','select=*');if(pv)PERF_VILLE=pv;}catch(e){}
 
     // Charger les annonces RÉCENTES uniquement (14 derniers jours + futur), par pages de 1000.
     // Anti-quota : charger tout l'historique à chaque ouverture a fait exploser la bande passante
@@ -827,6 +829,8 @@ async function mSync(){
     try{const sv=await sbGet('lbc_villes','select=*&limit=500');if(sv&&sv.length>0)VILLES_DB=sv;}catch(e){}
     try{const pp=await sbGet('lbc_params','select=*');(pp||[]).forEach(p=>PARAMS[p.id]=p.val);}catch(e){}
     try{const cs=await sbGet('lbc_catalogue_site','select=*&limit=300');if(cs)CATSITE=cs;}catch(e){}
+    try{const pa=await sbGet('lbc_perf_agg','select=*');if(pa)PERF_AGG=pa;}catch(e){}
+    try{const pv=await sbGet('lbc_perf_ville','select=*');if(pv)PERF_VILLE=pv;}catch(e){}
     // Même fenêtre que init() : 14 derniers jours + futur (anti-quota bande passante)
     const sa=await sbGet('lbc_annonces',`select=*&date_pub=gte.${fmtDate(addDays(new Date(),-14))}&order=date_pub.asc,heure.asc&limit=50000`);
     if(sa&&sa.length>0){RECS=sa;saveLocal();}
@@ -1476,6 +1480,10 @@ function boostActive(p,ds){return p.boost_pct&&p.boost_until&&p.boost_until>=(ds
 function effWeight(p,ds,isPr){
   let w=isPr===undefined?prodPoids(p):prodPoidsZone(p,isPr);
   if(boostActive(p,ds))w=Math.round(w*(1+p.boost_pct/100));
+  // Apprentissage : score global 3 horizons (7/30/90 j) de la zone — jamais sur un échantillon <10.
+  const b=blendedScore(p,isPr===undefined?false:isPr);
+  if(b){w=Math.round(w*Math.max(.4,Math.min(2.5,b.score/50)));return Math.max(1,w);}
+  // Secours (vues non chargées) : fenêtre 14 j locale, même prudence.
   const all=RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim&&r.validation==='ON');
   const zone=isPr===undefined?all:all.filter(r=>isPr?r.dept==='PROV':r.dept!=='PROV');
   const hist=zone.length>=10?zone:all;
@@ -1486,8 +1494,11 @@ function effWeight(p,ds,isPr){
   return Math.max(1,w);
 }
 function allocParams(){const a=PARAMS.allocation||{};return{champion:a.champion??45,fort:a.fort??20,normal:a.normal??20,explore:a.explore??10,retest:a.retest??5};}
-// Score d'une combinaison produit×ville (≥5 publications, sinon null — pas de fausses conclusions)
+// Score d'une combinaison produit×ville (≥5 publications, sinon null — pas de fausses conclusions).
+// Priorité aux agrégats 30/90 j (vue lbc_perf_ville) ; secours : fenêtre 14 j locale.
 function comboScoreOf(prod,ville){
+  const b=blendedCombo(prod,ville);
+  if(b!=null)return b;
   const recs=RECS.filter(r=>r.produit===prod.nom&&r.dim===prod.dim&&r.ville===ville&&r.validation==='ON');
   if(recs.length<5)return null;
   return perfScore100(perfAggOf(recs),prod);
@@ -1528,7 +1539,44 @@ function perfScore100(a,prod){
   s+=prod&&prod.priorite==='Très haute'?5:3;      // priorité commerciale
   return Math.round(s);
 }
-function sampleLabel(n){return n>=100?'💪 solide':n>=30?'📈 tendance':n>=10?'🧪 test':'⚠️ insuffisant';}
+function sampleLabel(n){return n>=300?'🏆 très fiable':n>=100?'💪 fiable':n>=30?'📈 tendance':n>=10?'🧪 test':'⚠️ insuffisant';}
+// ══════════════════════════════════════════════
+// FIABILISATION (03/09) — TROIS HORIZONS DE PERFORMANCE
+// 7 j = tendance récente (50 %) · 30 j = tendance principale (30 %) · 90 j = historique (20 %).
+// Les fenêtres sans volume (n<5) sont ignorées et les poids renormalisés — pas de réaction excessive.
+// Données : vues Supabase lbc_perf_agg (produit×zone) et lbc_perf_ville (produit×ville), quelques Ko.
+// ══════════════════════════════════════════════
+function _scoreNums(n,contacts,ventes,vues,ca,prod,recent){
+  if(!n)return null;
+  let s=0;
+  s+=Math.min(25,(contacts/n)*50);
+  s+=Math.min(25,(ventes/n)*167);
+  const mg=prod?margeOf(prod):null;s+=mg!=null?Math.max(0,Math.min(20,mg/2)):10;
+  s+=Math.min(15,(vues/n)/2);
+  s+=recent?10:4;
+  s+=prod&&prod.priorite==='Très haute'?5:3;
+  return Math.round(s);
+}
+// Score global pondéré d'un produit dans une zone. Retourne {score, n} ou null si <10 pubs au total.
+function blendedScore(p,isPr){
+  const row=PERF_AGG.find(a=>a.produit===p.nom&&(a.dim||'')===(p.dim||'')&&a.prov===!!isPr);
+  if(!row||row.n90<10)return null;
+  const recent=row.n7>0;
+  const wins=[[row.n7,row.c7,row.v7,row.vu7,+row.ca7,0.5],[row.n30,row.c30,row.v30,row.vu30,+row.ca30,0.3],[row.n90,row.c90,row.v90,row.vu90,+row.ca90,0.2]];
+  let ss=0,sw=0;
+  wins.forEach(([n,c,v,vu,ca,w])=>{if(n>=5){const sc=_scoreNums(n,c,v,vu,ca,p,recent);if(sc!=null){ss+=sc*w;sw+=w;}}});
+  if(!sw)return null;
+  return{score:Math.round(ss/sw),n:row.n90};
+}
+// Score d'une combinaison produit×ville (30 j pondéré 60 % + 90 j 40 %), null si <5 pubs.
+function blendedCombo(p,ville){
+  const row=PERF_VILLE.find(a=>a.produit===p.nom&&(a.dim||'')===(p.dim||'')&&a.ville===ville);
+  if(!row||row.n90<5)return null;
+  let ss=0,sw=0;
+  [[row.n30,row.c30,row.v30,0,0,0.6],[row.n90,row.c90,row.v90,row.vu90,+row.ca90,0.4]].forEach(([n,c,v,vu,ca,w])=>{
+    if(n>=3){const sc=_scoreNums(n,c,v,vu,ca,p,row.n30>0);if(sc!=null){ss+=sc*w;sw+=w;}}});
+  return sw?Math.round(ss/sw):null;
+}
 // Séquence de produits pour nb créneaux : quotas par groupe + roulette pondérée + plafond 30 %/produit + exploration.
 function allocSequence(basePool,nb,ds,rng,isPr){
   const A=allocParams();
@@ -1560,9 +1608,10 @@ function allocSequence(basePool,nb,ds,rng,isPr){
   // le catalogue reste VIVANT, un produit faible garde sa chance de remonter.
   const d7=fmtDate(addDays(new Date(),-7));
   const retest=basePool.filter(p=>{
-    const hist=RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim&&r.validation==='ON');
-    if(hist.length<10)return false;
-    const sc=perfScore100(perfAggOf(hist),p);
+    let sc=null;
+    const b=blendedScore(p,isPr);
+    if(b)sc=b.score;
+    else{const hist=RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim&&r.validation==='ON');if(hist.length<10)return false;sc=perfScore100(perfAggOf(hist),p);}
     return sc!=null&&sc<45&&!RECS.some(r=>r.produit===p.nom&&r.dim===p.dim&&r.date_pub>=d7);
   });
   const rtPool=retest.length?retest:expl;
@@ -1937,10 +1986,10 @@ function renderDepts(){
     const best=Object.entries(byProd).map(([k,rr])=>({k,a:perfAggOf(rr)})).filter(x=>x.a.n>=3&&(x.a.contacts||x.a.ventes)).sort((x,y)=>(y.a.ventes-x.a.ventes)||(y.a.contacts-x.a.contacts))[0];
     return{d,a,best};
   });
-  el.innerHTML='<table style="table-layout:auto;min-width:560px"><thead><tr><th>Dept</th><th>Pubs</th><th>💬/100</th><th>🛒/100</th><th>Meilleur produit</th><th>Échantillon</th></tr></thead><tbody>'+
+  el.innerHTML='<table style="table-layout:auto;min-width:560px"><thead><tr><th>Dept</th><th>Pubs</th><th>💬/100</th><th>🛒/100</th><th>CA/100</th><th>Meilleur produit</th><th>Échantillon</th></tr></thead><tbody>'+
     rows.map(x=>`<tr><td style="font-weight:800;font-family:var(--m)">${x.d}</td><td style="font-family:var(--m)">${x.a.n}</td>
       <td style="font-family:var(--m);color:var(--ac);font-weight:700">${x.a.n?(x.a.contacts/x.a.n*100).toFixed(0):'—'}</td>
-      <td style="font-family:var(--m);color:var(--gn);font-weight:700">${x.a.n?(x.a.ventes/x.a.n*100).toFixed(1):'—'}</td>
+      <td style="font-family:var(--m);color:var(--gn);font-weight:700">${x.a.n?(x.a.ventes/x.a.n*100).toFixed(1):'—'}</td><td style="font-family:var(--m);color:var(--gn)">${x.a.n?(x.a.ca/x.a.n*100).toFixed(0)+' €':'—'}</td>
       <td style="font-size:11px">${x.best?esc(x.best.k)+' ('+x.best.a.contacts+'💬 '+x.best.a.ventes+'🛒)':'<span style="color:var(--tx3)">pas assez de données</span>'}</td>
       <td style="font-size:10px;font-family:var(--m);color:var(--tx3)">${sampleLabel(x.a.n)}</td></tr>`).join('')+'</tbody></table>';
 }
@@ -1972,7 +2021,7 @@ function comboStats(){
 function renderCombos(){
   const t=document.getElementById('dash-combo-top'),f=document.getElementById('dash-combo-flop');if(!t)return;
   const all=comboStats().filter(x=>x.a.n>=3);
-  const line=x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.k)}</span><span style="font-family:var(--m);white-space:nowrap;color:var(--tx2)"><b style="color:${x.score>=70?'var(--gn)':x.score>=45?'var(--am)':'var(--rd)'}">${x.score}</b>/100 · ${x.a.n} pubs · ${(x.a.contacts/x.a.n*100).toFixed(0)}💬/100 · ${x.a.ventes}🛒 · ${sampleLabel(x.a.n)}</span></div>`;
+  const line=x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.k)}</span><span style="font-family:var(--m);white-space:nowrap;color:var(--tx2)"><b style="color:${x.score>=70?'var(--gn)':x.score>=45?'var(--am)':'var(--rd)'}">${x.score}</b>/100 · ${x.a.n} pubs · ${(x.a.contacts/x.a.n*100).toFixed(0)}💬/100 · ${x.a.ventes}🛒${x.a.ca?" · "+(x.a.ca/x.a.n*100).toFixed(0)+"€/100":""} · ${sampleLabel(x.a.n)}</span></div>`;
   const top=all.sort((a,b)=>b.score-a.score).slice(0,10);
   t.innerHTML=top.length?top.map(line).join(''):'<span style="color:var(--tx3)">Minimum 3 publications par combinaison — les données arrivent avec mes relevés quotidiens.</span>';
   const flop=all.filter(x=>x.a.n>=5&&x.a.contacts===0).sort((a,b)=>b.a.n-a.a.n).slice(0,5);
