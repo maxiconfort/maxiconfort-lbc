@@ -442,6 +442,7 @@ tr:hover td{background:var(--sf2)}
       <div class="gen-card" style="margin:0"><div class="gen-t">🕐 Meilleurs horaires</div><div id="dash-horaires" style="font-size:12px"></div></div>
       <div class="gen-card" style="margin:0"><div class="gen-t">✍️ Familles de titres (A/B)</div><div id="dash-titres" style="font-size:12px"></div></div>
     </div>
+    <div class="gen-card"><div class="gen-t">🗺 Vue par département IDF <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">meilleur produit · contacts/100 · ventes/100</span></div><div id="dash-depts" style="font-size:12px;overflow-x:auto"></div></div>
     <div class="gen-card" style="border-top:3px solid var(--am)"><div class="gen-t">🔥 Produits à pousser aujourd'hui</div><div id="dash-push"></div></div>
     <div class="gen-card"><div class="gen-t">🧭 Décisions</div><div id="dash-decisions" style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5"></div></div>
     <div class="gen-card"><div class="gen-t">💡 Recommandations du jour</div><div id="dash-recos" style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5"></div></div>
@@ -453,6 +454,7 @@ tr:hover td{background:var(--sf2)}
         <div class="fgr"><label class="fl">🟢 Forts</label><input class="fi" id="pa-fort" type="number" min="0" max="100" style="width:80px"></div>
         <div class="fgr"><label class="fl">🟡 Normaux</label><input class="fi" id="pa-normal" type="number" min="0" max="100" style="width:80px"></div>
         <div class="fgr"><label class="fl">🧪 Exploration</label><input class="fi" id="pa-explore" type="number" min="0" max="100" style="width:80px"></div>
+        <div class="fgr"><label class="fl" title="Produits jugés faibles retestés périodiquement — le catalogue reste vivant">🔁 Re-test</label><input class="fi" id="pa-retest" type="number" min="0" max="100" style="width:80px"></div>
         <button class="btn p" onclick="saveAlloc()">Enregistrer</button>
         <span id="pa-sum" style="font-size:11px;font-family:var(--m);color:var(--tx3)"></span>
       </div>
@@ -1474,7 +1476,13 @@ function effWeight(p,ds){
   }
   return Math.max(1,w);
 }
-function allocParams(){const a=PARAMS.allocation||{};return{champion:a.champion??50,fort:a.fort??25,normal:a.normal??15,explore:a.explore??10};}
+function allocParams(){const a=PARAMS.allocation||{};return{champion:a.champion??45,fort:a.fort??20,normal:a.normal??20,explore:a.explore??10,retest:a.retest??5};}
+// Score d'une combinaison produit×ville (≥5 publications, sinon null — pas de fausses conclusions)
+function comboScoreOf(prod,ville){
+  const recs=RECS.filter(r=>r.produit===prod.nom&&r.dim===prod.dim&&r.ville===ville&&r.validation==='ON');
+  if(recs.length<5)return null;
+  return perfScore100(perfAggOf(recs),prod);
+}
 // ── Rentabilité estimée (règle Borhen 02/09) : achat HT ≈ 35 % du PV TTC pour TOUS les produits
 // (exemple donné : matelas vendu 99 € TTC acheté 35 € HT). Marge = PV HT − achat − livraison.
 function rentaParams(){const r=PARAMS.renta||{};return{achat_ratio:r.achat_ratio??0.35,livraison:r.livraison??35};}
@@ -1517,8 +1525,8 @@ function allocSequence(basePool,nb,ds,rng){
   const A=allocParams();
   const groups={champion:[],fort:[],normal:[],test:[]};
   basePool.forEach(p=>groups[prodClass(p)].push(p));
-  const q={champion:Math.round(nb*A.champion/100),fort:Math.round(nb*A.fort/100),normal:Math.round(nb*A.normal/100)};
-  q.explore=Math.max(0,nb-q.champion-q.fort-q.normal);
+  const q={champion:Math.round(nb*A.champion/100),fort:Math.round(nb*A.fort/100),normal:Math.round(nb*A.normal/100),retest:Math.round(nb*(A.retest||0)/100)};
+  q.explore=Math.max(0,nb-q.champion-q.fort-q.normal-q.retest);
   const seq=[],count={},cap=Math.max(2,Math.round(nb*0.3));
   const key=p=>p.nom+'|'+p.dim;
   const draw=(arr,n)=>{
@@ -1539,6 +1547,17 @@ function allocSequence(basePool,nb,ds,rng){
   const pubCount=p=>RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim).length;
   const expl=[...basePool].sort((a,b)=>pubCount(a)-pubCount(b));
   for(let k=0;k<q.explore&&expl.length;k++){const p=expl[k%expl.length];count[key(p)]=(count[key(p)]||0)+1;seq.push(p);}
+  // Re-test (~5 %) : produits jugés faibles (score <45 avec ≥10 pubs) et non publiés depuis ≥7 j —
+  // le catalogue reste VIVANT, un produit faible garde sa chance de remonter.
+  const d7=fmtDate(addDays(new Date(),-7));
+  const retest=basePool.filter(p=>{
+    const hist=RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim&&r.validation==='ON');
+    if(hist.length<10)return false;
+    const sc=perfScore100(perfAggOf(hist),p);
+    return sc!=null&&sc<45&&!RECS.some(r=>r.produit===p.nom&&r.dim===p.dim&&r.date_pub>=d7);
+  });
+  const rtPool=retest.length?retest:expl;
+  for(let k=0;k<(q.retest||0)&&rtPool.length;k++){const p=rtPool[k%rtPool.length];count[key(p)]=(count[key(p)]||0)+1;seq.push(p);}
   while(seq.length<nb&&basePool.length)seq.push(basePool[Math.floor(rng()*basePool.length)]);
   return _shuffle(rng,seq);
 }
@@ -1617,13 +1636,20 @@ function buildDay(ds,nb,st,en,mode,isPr){
     const{ville,dept,zone,tier}=villes[i];
     const heure=m2t(t2m(st)+i*interval);
     const id=prefix+String(i+1).padStart(3,'0');
-    // Choisir dans la séquence le premier produit valable pour cette ville (échange si conflit)
-    let prod=null;
-    for(let j=i;j<seq.length;j++){
+    // Choisir dans la séquence le meilleur produit pour CETTE ville : parmi les 8 prochains candidats
+    // valables, on préfère celui dont le score produit×ville est le plus haut (apprentissage local).
+    let prod=null,bestJ=-1,bestSc=-1,seen=0;
+    for(let j=i;j<seq.length&&seen<8;j++){
       const c=seq[j];if(!c)continue;
       const kDay=ville+'|'+c.nom+'|'+c.dim;
-      if(!usedDay.has(kDay)&&!recent.has(kDay)){prod=c;seq[j]=seq[i];seq[i]=c;break;}
+      if(usedDay.has(kDay)||recent.has(kDay))continue;
+      seen++;
+      const sc=comboScoreOf(c,ville);
+      const eff=sc!=null?sc:50; // pas de données locales → neutre
+      if(eff>bestSc){bestSc=eff;bestJ=j;}
+      if(sc==null&&bestJ===j&&seen===1&&bestSc===50){/* premier candidat neutre : garde-le si rien de mieux */}
     }
+    if(bestJ>=0){prod=seq[bestJ];seq[bestJ]=seq[i];seq[i]=prod;}
     if(!prod){ // secours : accepte un produit déjà vu récemment plutôt qu'un trou
       for(let j=i;j<seq.length;j++){const c=seq[j];if(c&&!usedDay.has(ville+'|'+c.nom+'|'+c.dim)){prod=c;seq[j]=seq[i];seq[i]=c;break;}}
     }
@@ -1737,10 +1763,27 @@ function renderCatalogue(){
               <button class="btn" style="font-size:10px;padding:3px 8px;${boostActive(p)?'background:var(--am2);color:var(--am);border-color:rgba(245,158,11,.4)':''}" onclick="openBoost('${p.id}')" title="Augmenter temporairement la part de publications">${boostActive(p)?'🔥 +'+p.boost_pct+'% → '+p.boost_until:'🔥 Booster'}</button>
               <span style="font-size:9px;color:var(--tx3);font-family:var(--m)" title="Publications planifiées sur les 7 derniers jours">${RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim&&r.date_pub>=fmtDate(addDays(new Date(),-7))&&r.date_pub<=fmtDate(new Date())).length} pubs/7j</span>
             </div>
-            <div style="display:flex;align-items:center;gap:9px;font-size:10px;font-family:var(--m);font-weight:600" title="Zones où ce produit peut être publié">
+            <div style="display:flex;align-items:center;gap:9px;font-size:10px;font-family:var(--m);font-weight:600" title="CONTRAINTE de livraison (pas un choix stratégique) — pour réduire un produit faible, baissez son poids">
               <label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" ${(p.zone_pub||'both')!=='prov'?'checked':''} onchange="updZonePub('${p.id}','idf',this.checked)" style="accent-color:var(--ac)">🗼 IDF</label>
               <label style="display:flex;align-items:center;gap:3px;cursor:pointer"><input type="checkbox" ${(p.zone_pub||'both')!=='idf'?'checked':''} onchange="updZonePub('${p.id}','prov',this.checked)" style="accent-color:var(--gn)">🚚 Province</label>
             </div>
+            ${(()=>{ // ── Décision moteur : score, confiance, pression effective, action ──
+              const hist=RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim&&r.validation==='ON');
+              const n=hist.length, sc=n?perfScore100(perfAggOf(hist),p):null;
+              const w0=prodPoids(p), we=effWeight(p,fmtDate(new Date())), mult=(we/Math.max(1,w0)).toFixed(1);
+              let dec,decC;
+              if(n<10){dec='🧪 CONTINUER LE TEST';decC='var(--tx2)';}
+              else if(we>w0*1.25){dec='↑ AUGMENTER';decC='var(--gn)';}
+              else if(we<w0*0.75){dec='↓ RÉDUIRE';decC='var(--am)';}
+              else{dec='→ MAINTENIR';decC='var(--ac)';}
+              return `<div style="font-size:10px;font-family:var(--m);border-top:1px dashed var(--bd);padding-top:4px;margin-top:2px">
+                <div style="color:var(--tx3)">Moteur : ${sc!=null?'<b>'+sc+'/100</b>':'—'} · ${sampleLabel(n)} (${n} pubs) · pression ×${mult}</div>
+                <div style="display:flex;align-items:center;gap:5px;margin-top:2px;flex-wrap:wrap">
+                  <b style="color:${decC}">${dec}</b>
+                  ${n>=10&&dec!=='→ MAINTENIR'?`<button class="btn" style="font-size:9px;padding:2px 6px" title="Grave la pression moteur dans le poids admin" onclick="updProd('${p.id}','poids',${Math.max(5,Math.min(100,Math.round(w0*(we/Math.max(1,w0)))))});renderCatalogue()">✔ Accepter</button>`:''}
+                  <button class="btn" style="font-size:9px;padding:2px 6px" title="Forcer champion (poids 90)" onclick="updProd('${p.id}','poids',90);renderCatalogue()">🔥</button>
+                  <button class="btn" style="font-size:9px;padding:2px 6px" title="Forcer test (poids 15)" onclick="updProd('${p.id}','poids',15);renderCatalogue()">🧪</button>
+                </div></div>`;})()}
           </div>`:isProv()?`<div style="display:flex;align-items:center;justify-content:space-between;width:100%"><span class="pp">${p.prix}€</span><button class="btn" style="font-size:10px;padding:3px 8px;height:auto" onclick="qPrix('${p.id}',${p.prix})">✏</button></div>`:`<span class="pp">${p.prix}€</span>`}
           ${isAdmin()&&p.marge?`<span class="pmg">${p.marge}%</span>`:''}
         </div>
@@ -1863,7 +1906,26 @@ function renderDash(){
   if(zsel&&zsel.options.length<=1&&VILLES_DB){[...new Set(VILLES_DB.map(v=>v.zone))].sort().forEach(z=>{const o=document.createElement('option');o.value=z;o.textContent=z;zsel.appendChild(o);});}
   renderDashVilles();
   renderPush();renderDecisions();renderAllocParams();renderCatSite();
-  renderKPI100();renderCombos();renderReco();renderHoraires();renderTitres();
+  renderKPI100();renderCombos();renderReco();renderHoraires();renderTitres();renderDepts();
+}
+// ── Vue par département IDF : meilleur produit/dimension, contacts et ventes pour 100 annonces ──
+function renderDepts(){
+  const el=document.getElementById('dash-depts');if(!el)return;
+  const DEPTS=['75','92','93','94','95','78','91','77'];
+  const rows=DEPTS.map(d=>{
+    const recs=RECS.filter(r=>r.dept===d&&r.validation==='ON');
+    const a=perfAggOf(recs);
+    // meilleur produit du département (par contacts puis ventes, min 3 pubs)
+    const byProd={};recs.forEach(r=>{const k=r.produit+' '+(r.dim||'');(byProd[k]=byProd[k]||[]).push(r);});
+    const best=Object.entries(byProd).map(([k,rr])=>({k,a:perfAggOf(rr)})).filter(x=>x.a.n>=3&&(x.a.contacts||x.a.ventes)).sort((x,y)=>(y.a.ventes-x.a.ventes)||(y.a.contacts-x.a.contacts))[0];
+    return{d,a,best};
+  });
+  el.innerHTML='<table style="table-layout:auto;min-width:560px"><thead><tr><th>Dept</th><th>Pubs</th><th>💬/100</th><th>🛒/100</th><th>Meilleur produit</th><th>Échantillon</th></tr></thead><tbody>'+
+    rows.map(x=>`<tr><td style="font-weight:800;font-family:var(--m)">${x.d}</td><td style="font-family:var(--m)">${x.a.n}</td>
+      <td style="font-family:var(--m);color:var(--ac);font-weight:700">${x.a.n?(x.a.contacts/x.a.n*100).toFixed(0):'—'}</td>
+      <td style="font-family:var(--m);color:var(--gn);font-weight:700">${x.a.n?(x.a.ventes/x.a.n*100).toFixed(1):'—'}</td>
+      <td style="font-size:11px">${x.best?esc(x.best.k)+' ('+x.best.a.contacts+'💬 '+x.best.a.ventes+'🛒)':'<span style="color:var(--tx3)">pas assez de données</span>'}</td>
+      <td style="font-size:10px;font-family:var(--m);color:var(--tx3)">${sampleLabel(x.a.n)}</td></tr>`).join('')+'</tbody></table>';
 }
 // ── V4-OPT : l'indicateur le plus important — CONTACTS / VENTES / MARGE pour 100 annonces ──
 function renderKPI100(){
@@ -2007,16 +2069,16 @@ function renderDecisions(){
 // ── V4 : réglages allocation ──
 function renderAllocParams(){
   const A=allocParams();
-  ['champion','fort','normal','explore'].forEach(k=>{const e=document.getElementById('pa-'+k);if(e)e.value=A[k];});
-  const s=document.getElementById('pa-sum');if(s)s.textContent='Total : '+(A.champion+A.fort+A.normal+A.explore)+' % (idéal 100)';
+  ['champion','fort','normal','explore','retest'].forEach(k=>{const e=document.getElementById('pa-'+k);if(e)e.value=A[k];});
+  const s=document.getElementById('pa-sum');if(s)s.textContent='Total : '+(A.champion+A.fort+A.normal+A.explore+A.retest)+' % (idéal 100)';
   const R=rentaParams();
   const pr=document.getElementById('pr-ratio');if(pr)pr.value=Math.round(R.achat_ratio*100);
   const pl=document.getElementById('pr-liv');if(pl)pl.value=R.livraison;
 }
 async function saveAlloc(){
-  const val={};['champion','fort','normal','explore'].forEach(k=>val[k]=Math.max(0,Math.min(100,parseInt(document.getElementById('pa-'+k).value)||0)));
+  const val={};['champion','fort','normal','explore','retest'].forEach(k=>val[k]=Math.max(0,Math.min(100,parseInt(document.getElementById('pa-'+k).value)||0)));
   PARAMS.allocation=val;renderAllocParams();
-  showToast('⚙️ Réglages enregistrés','Champions '+val.champion+'% · Forts '+val.fort+'% · Normaux '+val.normal+'% · Exploration '+val.explore+'%');
+  showToast('⚙️ Réglages enregistrés','Champions '+val.champion+'% · Forts '+val.fort+'% · Normaux '+val.normal+'% · Explo '+val.explore+'% · Re-test '+val.retest+'%');
   try{await sbUpsert('lbc_params',[{id:'allocation',val,updated_at:new Date().toISOString()}]);}catch(e){syncErr(e);}
 }
 async function saveRenta(){
