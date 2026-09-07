@@ -1067,8 +1067,8 @@ function renderTable(){
 // ══════════════════════════════════════════════
 async function toggleVal(id){
   const r=RECS.find(x=>x.id===id);if(!r)return false;
-  // Garde-fou date (05/09) : marquer « publiée » une annonce d'un AUTRE jour qu'aujourd'hui
-  // demande confirmation — évite les journées futures cliquées par erreur (cas du 05/09 : 14 annonces de lundi).
+  // Garde-fou date : marquer « publiée » une annonce d'un AUTRE jour qu'aujourd'hui
+  // demande confirmation — évite les clics sur un mauvais jour de planning (passé ou futur).
   if(r.validation!=='ON'&&r.date_pub!==fmtDate(new Date())){
     const dd=new Date(r.date_pub+'T12:00:00');
     if(!confirm('⚠ ATTENTION : cette annonce est prévue pour '+DAYS_FR[dd.getDay()]+' '+dd.getDate()+' '+MONTHS_FR[dd.getMonth()]+' — ce n\'est PAS le planning d\'aujourd\'hui.\n\nRègle : publier le jour J (et finir la veille s\'il en reste).\n\nMarquer quand même comme publiée ?'))return false;
