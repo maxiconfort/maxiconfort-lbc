@@ -87,6 +87,7 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);font-size:13px;li
 .cd-badge{position:absolute;top:8px;right:8px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;font-family:var(--m)}
 .cb-t{background:var(--ac);color:#fff}
 .cb-d{background:var(--gn2);color:var(--gn)}
+.cb-r{background:#dc2626;color:#fff}
 .cd-stats{font-size:11px;display:flex;flex-direction:column;gap:2px}
 .cd-stat{display:flex;justify-content:space-between}
 .cd-stat span:first-child{color:var(--tx3)}
@@ -432,6 +433,7 @@ tr:hover td{background:var(--sf2)}
     <div id="dash-tiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:12px"></div>
     <div id="dash-horizons" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;font-family:var(--m)"></div>
     <div id="dash-kpi100" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:18px"></div>
+    <div class="gen-card" style="border-top:3px solid var(--gn)"><div class="gen-t">👥 Publications des collaboratrices — 7 derniers jours</div><div id="dash-complet" style="font-size:12px;overflow-x:auto"></div></div>
     <div class="gen-card" style="border-top:3px solid var(--ac)">
       <div class="gen-t">⚡ Recommandation pour demain <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">répartition calculée par le moteur (poids × perf × boosts)</span></div>
       <div id="dash-reco" style="font-size:12px"></div>
@@ -952,7 +954,7 @@ function renderCal(){
     let cls='cd';if(isEmpty)cls+=' empty';else if(isDone)cls+=' done';else if(isPartial)cls+=' partial';if(isToday)cls+=' today';
     const fc=isDone?'var(--gn)':isPartial?'var(--am)':'var(--bd2)';
     html+=`<div class="${cls}" onclick="openDay('${ds}')">
-      ${isToday?'<span class="cd-badge cb-t">Auj.</span>':''}${isDone&&!isToday?'<span class="cd-badge cb-d">✓</span>':''}
+      ${isToday?'<span class="cd-badge cb-t">Auj.</span>':''}${isDone&&!isToday?'<span class="cd-badge cb-d">✓</span>':''}${d.getTime()<today.getTime()&&tot>0&&on<tot?`<span class="cd-badge cb-r">⚠ reste ${tot-on}</span>`:''}
       <div class="cd-num">${d.getDate()}</div>
       <div class="cd-month">${MONTHS_FR[d.getMonth()].substring(0,3)}</div>
       ${isEmpty?`<div style="font-size:11px;color:var(--tx3);margin-top:4px;font-style:italic">${isAdmin()?'Cliquer pour générer':'En attente'}</div>`
@@ -1060,7 +1062,13 @@ function renderTable(){
 // ACTIONS
 // ══════════════════════════════════════════════
 async function toggleVal(id){
-  const r=RECS.find(x=>x.id===id);if(!r)return;
+  const r=RECS.find(x=>x.id===id);if(!r)return false;
+  // Garde-fou date (05/09) : marquer « publiée » une annonce d'un AUTRE jour qu'aujourd'hui
+  // demande confirmation — évite les journées futures cliquées par erreur (cas du 05/09 : 14 annonces de lundi).
+  if(r.validation!=='ON'&&r.date_pub!==fmtDate(new Date())){
+    const dd=new Date(r.date_pub+'T12:00:00');
+    if(!confirm('⚠ ATTENTION : cette annonce est prévue pour '+DAYS_FR[dd.getDay()]+' '+dd.getDate()+' '+MONTHS_FR[dd.getMonth()]+' — ce n\'est PAS le planning d\'aujourd\'hui.\n\nRègle : publier le jour J (et finir la veille s\'il en reste).\n\nMarquer quand même comme publiée ?'))return false;
+  }
   r.validation=r.validation==='ON'?'OFF':'ON';
   r.statut=r.validation==='ON'?'Validée':'À publier';
   r.updated_at=new Date().toISOString();
@@ -1069,6 +1077,7 @@ async function toggleVal(id){
   setSync('⟳ Sauvegarde...','am');
   try{await sbPatch('lbc_annonces',id,{validation:r.validation,statut:r.statut,updated_at:r.updated_at});setSync('✓ '+new Date().toLocaleTimeString('fr-FR'),'ok');}
   catch(e){setSync('⚠ Non sync','err');showToast('⚠ Non synchronisé','Vérifiez votre connexion','am');}
+  return true;
 }
 async function pF(id,key,val){
   const r=RECS.find(x=>x.id===id);if(!r)return;
@@ -1151,14 +1160,16 @@ function closePublier(){document.getElementById('pubov').style.display='none';}
 // V4.2 : mode enchaîné — après « J'ai publié », l'annonce SUIVANTE du jour s'ouvre toute seule.
 // Le flux collaboratrice devient : copier titre → copier description → publier → clic → suivante.
 function donePublier(id){
-  toggleVal(id);
-  const r=RECS.find(x=>x.id===id);
-  const day=(isAdmin()?getZoneRecs(RECS.filter(x=>x.date_pub===CUR)):getMyRecs().filter(x=>x.date_pub===CUR))
-    .filter(x=>x.validation!=='ON'&&x.statut!=='Bloqué'&&x.id!==id)
-    .sort((a,b)=>(a.heure||'').localeCompare(b.heure||''));
-  const next=day.find(x=>(x.heure||'')>=((r&&r.heure)||''))||day[0];
-  if(next){setTimeout(()=>openPublier(next.id),150);}
-  else{closePublier();showToast('🎉 Journée terminée !','Toutes les annonces du jour sont publiées — bravo');}
+  toggleVal(id).then(ok=>{
+    if(ok===false)return; // garde-fou date : annulé → on n'enchaîne pas
+    const r=RECS.find(x=>x.id===id);
+    const day=(isAdmin()?getZoneRecs(RECS.filter(x=>x.date_pub===CUR)):getMyRecs().filter(x=>x.date_pub===CUR))
+      .filter(x=>x.validation!=='ON'&&x.statut!=='Bloqué'&&x.id!==id)
+      .sort((a,b)=>(a.heure||'').localeCompare(b.heure||''));
+    const next=day.find(x=>(x.heure||'')>=((r&&r.heure)||''))||day[0];
+    if(next){setTimeout(()=>openPublier(next.id),150);}
+    else{closePublier();showToast('🎉 Journée terminée !','Toutes les annonces du jour sont publiées — bravo');}
+  });
 }
 // ── P1 : saisie des performances (vues/messages/appels/vente) — la boucle d'apprentissage ──
 let PERF_ID=null;
@@ -1954,6 +1965,25 @@ function renderDash(){
     tile('🛒 Ventes',ventes,'var(--gn)')+
     tile('CA saisi',S('ca').toFixed(0)+' €','var(--gn)')+
     tile('Annonces fenêtre 14 j',RECS.length);
+  // ── Complétion 7 jours par zone (suivi collaboratrices, 05/09) ──
+  const cw=document.getElementById('dash-complet');
+  if(cw){
+    const zones=[[r=>r.dept!=='PROV'],[r=>r.dept==='PROV'&&r.collab_id==='A'],[r=>r.dept==='PROV'&&r.collab_id==='B']];
+    let crows='';
+    for(let i=6;i>=0;i--){
+      const ds=fmtDate(addDays(new Date(),-i));
+      const dd=new Date(ds+'T12:00:00');
+      const dayR=RECS.filter(r=>r.date_pub===ds);
+      crows+='<tr><td style="font-weight:600;white-space:nowrap">'+DAYS_FR[dd.getDay()]+' '+dd.getDate()+' '+MONTHS_FR[dd.getMonth()].substring(0,4)+(i===0?' <span style="color:var(--ac)">(auj.)</span>':'')+'</td>'+zones.map(([f])=>{
+        const zr=dayR.filter(f),t=zr.length,on=zr.filter(r=>r.validation==='ON').length;
+        if(!t)return '<td style="color:var(--tx3)">—</td>';
+        const c=on===t?'var(--gn)':on>0?'var(--am)':'#dc2626';
+        return '<td style="color:'+c+';font-weight:700;font-family:var(--m)">'+on+'/'+t+(on===t?' ✓':(i>0?' ⚠':''))+'</td>';
+      }).join('')+'</tr>';
+    }
+    cw.innerHTML='<table style="table-layout:auto"><thead><tr><th>Jour</th><th>🗼 IDF</th><th>🅰 Prov A</th><th>🅱 Prov B</th></tr></thead><tbody>'+crows+'</tbody></table>'+
+      '<div style="font-size:11px;color:var(--tx3);margin-top:6px">⚠ = créneaux passés non publiés → règle : chaque journée commence par finir la veille. Prov B démarre le lundi 07/09.</div>';
+  }
   // ── Tops produits / villes (dès qu'il y a des données perf) ──
   const bp=_agg(RECS,'produit'),bv=_agg(RECS,'ville');
   const top=(m,n)=>Object.entries(m).filter(([,a])=>a.contacts||a.ventes).sort((x,y)=>(y[1].ventes-x[1].ventes)||(y[1].contacts-x[1].contacts)).slice(0,n);
