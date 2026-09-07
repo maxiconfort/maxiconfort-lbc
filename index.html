@@ -1,10 +1,10 @@
-<!-- MAXICONFORT LBC v4.5 -->
+<!-- MAXICONFORT LBC v4.6 -->
 <!DOCTYPE html>
 <html lang="fr" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maxiconfort LBC v4.5</title>
+<title>Maxiconfort LBC v4.6</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 [data-theme=dark]{--bg:#080b12;--sf:#0e1420;--sf2:#141c2e;--sf3:#1a2438;--bd:#1e2d45;--bd2:#263550;--tx:#e8edf5;--tx2:#7a8fad;--tx3:#3d5070;--ac:#3b82f6;--ac2:#2563eb;--gl:rgba(59,130,246,.15);--gn:#10b981;--gn2:rgba(16,185,129,.12);--am:#f59e0b;--am2:rgba(245,158,11,.12);--rd:#ef4444;--rd2:rgba(239,68,68,.12);--sh:0 8px 32px rgba(0,0,0,.4)}
@@ -245,7 +245,7 @@ tr:hover td{background:var(--sf2)}
   <div class="lb">
     <div class="lic">MC</div>
     <div class="lt">Maxiconfort LBC</div>
-    <div class="ls2">Gestionnaire publications v4.5 — moteur 7/30/90 j</div>
+    <div class="ls2">Gestionnaire publications v4.6 — moteur finalisé 7/30/90 j</div>
     <div id="acc-fields">
       <label class="ll">Email du compte</label>
       <input class="li lim" id="email" type="email" placeholder="email@exemple.fr" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
@@ -433,6 +433,7 @@ tr:hover td{background:var(--sf2)}
     <div id="dash-tiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:12px"></div>
     <div id="dash-horizons" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;font-family:var(--m)"></div>
     <div id="dash-kpi100" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:18px"></div>
+    <div class="gen-card" style="border-top:3px solid var(--rd)"><div class="gen-t">🚨 Alertes <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">baisses · montées · surpublication · sous-test · écarts catalogue</span></div><div id="dash-alertes" style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5"></div></div>
     <div class="gen-card" style="border-top:3px solid var(--gn)"><div class="gen-t">👥 Publications des collaboratrices — 7 derniers jours</div><div id="dash-complet" style="font-size:12px;overflow-x:auto"></div></div>
     <div class="gen-card" style="border-top:3px solid var(--ac)">
       <div class="gen-t">⚡ Recommandation pour demain <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">répartition calculée par le moteur (poids × perf × boosts)</span></div>
@@ -447,7 +448,8 @@ tr:hover td{background:var(--sf2)}
       <div class="gen-card" style="margin:0"><div class="gen-t">🕐 Meilleurs horaires</div><div id="dash-horaires" style="font-size:12px"></div></div>
       <div class="gen-card" style="margin:0"><div class="gen-t">✍️ Familles de titres (A/B)</div><div id="dash-titres" style="font-size:12px"></div></div>
     </div>
-    <div class="gen-card"><div class="gen-t">🗺 Vue par département IDF <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">meilleur produit · contacts/100 · ventes/100</span></div><div id="dash-depts" style="font-size:12px;overflow-x:auto"></div></div>
+    <div class="gen-card"><div class="gen-t">📷 Photos A/B/C <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">performance par photo principale — la photo devient une variable d'optimisation comme le titre</span></div><div id="dash-photos" style="font-size:12px"></div></div>
+    <div class="gen-card"><div class="gen-t">🗺 Vue par département IDF <span style="font-size:11px;font-weight:500;color:var(--tx3);font-family:var(--m)">7/30/90 j · contacts/100 · ventes/100 · CA/100 · marge/100 · évolution</span></div><div id="dash-depts" style="font-size:12px;overflow-x:auto"></div></div>
     <div class="gen-card" style="border-top:3px solid var(--am)"><div class="gen-t">🔥 Produits à pousser aujourd'hui</div><div id="dash-push"></div></div>
     <div class="gen-card"><div class="gen-t">🧭 Décisions</div><div id="dash-decisions" style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5"></div></div>
     <div class="gen-card"><div class="gen-t">💡 Recommandations du jour</div><div id="dash-recos" style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.5"></div></div>
@@ -559,7 +561,7 @@ const ANON = 'sb_publishable_cRPSD97LDH0beIID1Wecxw_xY7cEAeX';
 // ══════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════
-let ROLE=null,TOKEN=null,RTOKEN=null,RECS=[],PRODS=[],VILLES_DB=null,CATSITE=[],PARAMS={},PERF_AGG=[],PERF_VILLE=[],CUR=null,WOFF=0,ZONE='all',CAT_F='all',FIDS=[],SYNC_T=null,LAST_SYNC=null,SYNCING=false;
+let ROLE=null,TOKEN=null,RTOKEN=null,RECS=[],PRODS=[],VILLES_DB=null,CATSITE=[],PARAMS={},PERF_AGG=[],PERF_VILLE=[],PERF_DEPT=[],CUR=null,WOFF=0,ZONE='all',CAT_F='all',FIDS=[],SYNC_T=null,LAST_SYNC=null,SYNCING=false;
 
 // ══════════════════════════════════════════════
 // SUPABASE
@@ -756,6 +758,7 @@ async function init(){
     try{const cs=await sbGet('lbc_catalogue_site','select=*&limit=300');if(cs)CATSITE=cs;}catch(e){}
     try{const pa=await sbGet('lbc_perf_agg','select=*');if(pa)PERF_AGG=pa;}catch(e){}
     try{const pv=await sbGet('lbc_perf_ville','select=*');if(pv)PERF_VILLE=pv;}catch(e){}
+    try{const pd=await sbGet('lbc_perf_dept','select=*');if(pd)PERF_DEPT=pd;}catch(e){}
 
     // Charger les annonces RÉCENTES uniquement (14 derniers jours + futur), par pages de 1000.
     // Anti-quota : charger tout l'historique à chaque ouverture a fait exploser la bande passante
@@ -836,6 +839,7 @@ async function mSync(){
     try{const cs=await sbGet('lbc_catalogue_site','select=*&limit=300');if(cs)CATSITE=cs;}catch(e){}
     try{const pa=await sbGet('lbc_perf_agg','select=*');if(pa)PERF_AGG=pa;}catch(e){}
     try{const pv=await sbGet('lbc_perf_ville','select=*');if(pv)PERF_VILLE=pv;}catch(e){}
+    try{const pd=await sbGet('lbc_perf_dept','select=*');if(pd)PERF_DEPT=pd;}catch(e){}
     // Même fenêtre que init() : 14 derniers jours + futur (anti-quota bande passante)
     const sa=await sbGet('lbc_annonces',`select=*&date_pub=gte.${fmtDate(addDays(new Date(),-14))}&order=date_pub.asc,heure.asc&limit=50000`);
     if(sa&&sa.length>0){RECS=sa;saveLocal();}
@@ -1989,7 +1993,12 @@ function renderDash(){
   const top=(m,n)=>Object.entries(m).filter(([,a])=>a.contacts||a.ventes).sort((x,y)=>(y[1].ventes-x[1].ventes)||(y[1].contacts-x[1].contacts)).slice(0,n);
   const tprod=top(bp,5),tville=top(bv,5);
   const list=(title,rows)=>`<div class="gen-card" style="margin:0"><div class="gen-t">${title}</div>${rows.length?rows.map(([k,a])=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(k)}</span><span style="font-family:var(--m);white-space:nowrap;color:var(--tx2)">${a.contacts}💬 ${a.ventes}🛒${a.ca?' '+a.ca.toFixed(0)+'€':''}</span></div>`).join(''):'<div style="font-size:12px;color:var(--tx3)">Pas encore de données — faites saisir les 📊</div>'}</div>`;
-  document.getElementById('dash-tops').innerHTML=list('🏆 Top produits',tprod)+list('🏙 Top villes',tville);
+  // Top dimensions (agrégats 90 j Supabase) + Top départements (vue lbc_perf_dept) — priorité contacts/ventes, jamais les vues seules
+  const bdim={};PERF_AGG.forEach(a=>{const k=a.dim||'—';if(!bdim[k])bdim[k]={contacts:0,ventes:0,ca:0,n:0};bdim[k].contacts+=a.c90;bdim[k].ventes+=a.v90;bdim[k].ca+=Number(a.ca90)||0;bdim[k].n+=a.n90;});
+  const tdim=Object.entries(bdim).filter(([,a])=>a.contacts||a.ventes).sort((x,y)=>(y[1].ventes-x[1].ventes)||(y[1].contacts-x[1].contacts)).slice(0,5);
+  const bdept={};PERF_DEPT.filter(x=>x.dept!=='PROV').forEach(x=>{bdept[x.dept]={contacts:x.c90,ventes:x.v90,ca:Number(x.ca90)||0,n:x.n90};});
+  const tdept=Object.entries(bdept).filter(([,a])=>a.contacts||a.ventes).sort((x,y)=>(y[1].ventes-x[1].ventes)||(y[1].contacts-x[1].contacts)).slice(0,5);
+  document.getElementById('dash-tops').innerHTML=list('🏆 Top produits',tprod)+list('🏙 Top villes',tville)+list('📐 Top dimensions (90 j)',tdim)+list('🗺 Top départements (90 j)',tdept);
   // ── Recommandations à règles ──
   const recos=[];
   const perfCount=RECS.filter(r=>r.vues||r.messages||r.appels||r.vendu).length;
@@ -2013,25 +2022,95 @@ function renderDash(){
   renderDashVilles();
   renderPush();renderDecisions();renderAllocParams();renderCatSite();
   renderHorizons();renderKPI100();renderCombos();renderReco();renderHoraires();renderTitres();renderDepts();
+  renderPhotos();renderAlertes();
 }
 // ── Vue par département IDF : meilleur produit/dimension, contacts et ventes pour 100 annonces ──
 function renderDepts(){
   const el=document.getElementById('dash-depts');if(!el)return;
   const DEPTS=['75','92','93','94','95','78','91','77'];
+  const R=rentaParams();
   const rows=DEPTS.map(d=>{
     const recs=RECS.filter(r=>r.dept===d&&r.validation==='ON');
-    const a=perfAggOf(recs);
-    // meilleur produit du département (par contacts puis ventes, min 3 pubs)
+    // meilleur produit du département (par contacts puis ventes, min 3 pubs, fenêtre 14 j)
     const byProd={};recs.forEach(r=>{const k=r.produit+' '+(r.dim||'');(byProd[k]=byProd[k]||[]).push(r);});
     const best=Object.entries(byProd).map(([k,rr])=>({k,a:perfAggOf(rr)})).filter(x=>x.a.n>=3&&(x.a.contacts||x.a.ventes)).sort((x,y)=>(y.a.ventes-x.a.ventes)||(y.a.contacts-x.a.contacts))[0];
-    return{d,a,best};
+    const v=PERF_DEPT.find(x=>x.dept===d)||{n7:0,c7:0,v7:0,n30:0,c30:0,v30:0,ca30:0,n90:0,c90:0,v90:0,ca90:0,pv90:0};
+    // Marge estimée sur les ventes 90 j : PV HT − achat (ratio) − livraison, ramenée à 100 pubs
+    const pv=Number(v.pv90)||Number(v.ca90)||0;
+    const marge90=pv?(pv/1.2-pv*R.achat_ratio-R.livraison*(Number(v.v90)||0)):0;
+    // Évolution : taux de contact 7 j vs 30 j vs 90 j
+    const r7=v.n7?v.c7/v.n7:null,r30=v.n30?v.c30/v.n30:null,r90=v.n90?v.c90/v.n90:null;
+    let evo='→',evoC='var(--tx3)';
+    if(r7!=null&&r30!=null&&v.n7>=10){if(r7>r30*1.5&&r7>0){evo='↗';evoC='var(--gn)';}else if(r7<r30*0.5&&r30>0.03){evo='↘';evoC='var(--rd)';}}
+    return{d,v,best,marge90,r7,r30,r90,evo,evoC};
   });
-  el.innerHTML='<table style="table-layout:auto;min-width:560px"><thead><tr><th>Dept</th><th>Pubs</th><th>💬/100</th><th>🛒/100</th><th>CA/100</th><th>Meilleur produit</th><th>Échantillon</th></tr></thead><tbody>'+
-    rows.map(x=>`<tr><td style="font-weight:800;font-family:var(--m)">${x.d}</td><td style="font-family:var(--m)">${x.a.n}</td>
-      <td style="font-family:var(--m);color:var(--ac);font-weight:700">${x.a.n?(x.a.contacts/x.a.n*100).toFixed(0):'—'}</td>
-      <td style="font-family:var(--m);color:var(--gn);font-weight:700">${x.a.n?(x.a.ventes/x.a.n*100).toFixed(1):'—'}</td><td style="font-family:var(--m);color:var(--gn)">${x.a.n?(x.a.ca/x.a.n*100).toFixed(0)+' €':'—'}</td>
+  const pc=(c,n)=>n?( c/n*100).toFixed(0):'—';
+  el.innerHTML='<table style="table-layout:auto;min-width:660px"><thead><tr><th>Dept</th><th title="Publications 7/30/90 jours">Pubs 7/30/90</th><th title="Contacts pour 100 publications, par horizon">💬/100 (7 · 30 · 90 j)</th><th>Évol.</th><th title="Ventes pour 100 publications (90 j)">🛒/100</th><th title="CA pour 100 publications (90 j)">CA/100</th><th title="Marge estimée (ratio achat) pour 100 publications, 90 j">💰 Marge/100</th><th>Meilleur produit (14 j)</th><th>Échantillon</th></tr></thead><tbody>'+
+    rows.map(x=>`<tr><td style="font-weight:800;font-family:var(--m)">${x.d}</td>
+      <td style="font-family:var(--m);color:var(--tx3)">${x.v.n7} / ${x.v.n30} / ${x.v.n90}</td>
+      <td style="font-family:var(--m);color:var(--ac);font-weight:700">${pc(x.v.c7,x.v.n7)} · ${pc(x.v.c30,x.v.n30)} · ${pc(x.v.c90,x.v.n90)}</td>
+      <td style="font-size:15px;font-weight:800;color:${x.evoC}" title="Taux de contact 7 j vs 30 j (à partir de 10 pubs/7 j)">${x.evo}</td>
+      <td style="font-family:var(--m);color:var(--gn);font-weight:700">${x.v.n90?(x.v.v90/x.v.n90*100).toFixed(1):'—'}</td>
+      <td style="font-family:var(--m);color:var(--gn)">${x.v.n90?(Number(x.v.ca90)/x.v.n90*100).toFixed(0)+' €':'—'}</td>
+      <td style="font-family:var(--m);color:var(--gn)">${x.v.n90&&x.marge90?(x.marge90/x.v.n90*100).toFixed(0)+' €':'—'}</td>
       <td style="font-size:11px">${x.best?esc(x.best.k)+' ('+x.best.a.contacts+'💬 '+x.best.a.ventes+'🛒)':'<span style="color:var(--tx3)">pas assez de données</span>'}</td>
-      <td style="font-size:10px;font-family:var(--m);color:var(--tx3)">${sampleLabel(x.a.n)}</td></tr>`).join('')+'</tbody></table>';
+      <td style="font-size:10px;font-family:var(--m);color:var(--tx3)">${sampleLabel(x.v.n90)}</td></tr>`).join('')+'</tbody></table>'+
+    '<div style="font-size:10px;color:var(--tx3);margin-top:6px;font-family:var(--m)">Source : vue Supabase 90 j (toutes annonces relevées), pas seulement la fenêtre 14 j. ↗/↘ = taux de contact 7 j vs 30 j.</div>';
+}
+// ── FINALISATION (05/09) : 📷 suivi Photos A/B/C — comparer les variantes de photo principale ──
+function renderPhotos(){
+  const el=document.getElementById('dash-photos');if(!el)return;
+  const m={};
+  RECS.filter(r=>r.validation==='ON'&&r.photo).forEach(r=>{
+    const pk=r.produit+' '+(r.dim||'');
+    m[pk]=m[pk]||{};(m[pk][r.photo]=m[pk][r.photo]||[]).push(r);
+  });
+  const rows=[];
+  Object.entries(m).forEach(([pk,byPhoto])=>{
+    const variants=Object.entries(byPhoto).map(([ph,recs])=>({ph,a:perfAggOf(recs)}));
+    if(variants.length<2)return;
+    const tot=variants.reduce((s,v)=>s+v.a.n,0);
+    if(tot<6)return;
+    variants.sort((a,b)=>(b.a.n?b.a.contacts/b.a.n:0)-(a.a.n?a.a.contacts/a.a.n:0));
+    rows.push({pk,variants,tot,win:variants[0],hasData:variants.some(v=>v.a.contacts>0)});
+  });
+  rows.sort((a,b)=>b.tot-a.tot);
+  el.innerHTML=rows.length?rows.slice(0,8).map(x=>`<div style="padding:6px 0;border-bottom:1px solid var(--bd)">
+    <div style="font-weight:700;font-size:12px">${esc(x.pk)} ${x.hasData&&x.win.a.contacts?'<span style="color:var(--gn);font-size:11px">🏆 '+esc(x.win.ph)+'</span>':'<span style="color:var(--tx3);font-size:10px">pas encore de gagnante</span>'}</div>
+    <div style="font-size:11px;font-family:var(--m);color:var(--tx2)">${x.variants.map(v=>esc(String(v.ph).replace('Photo ',''))+' : '+v.a.n+' pubs · '+(v.a.n?(v.a.contacts/v.a.n*100).toFixed(0):0)+'💬/100 · '+(v.a.n?(v.a.vues/v.a.n).toFixed(0):0)+'👁/pub').join(' &nbsp;|&nbsp; ')}</div>
+  </div>`).join('')+'<div style="font-size:10px;color:var(--tx3);margin-top:6px;font-family:var(--m)">Gagnante par CONTACTS/100 (pas les vues) — minimum 2 variantes et 6 publications par produit. Fenêtre 14 j.</div>'
+  :'<span style="color:var(--tx3);font-size:12px">Chaque annonce enregistre sa photo principale (A/B/C…) — la comparaison apparaît dès 2 variantes et 6 publications d\'un même produit avec relevés.</span>';
+}
+// ── FINALISATION (05/09) : 🚨 Alertes — surveillance automatique ──
+function renderAlertes(){
+  const el=document.getElementById('dash-alertes');if(!el)return;
+  const A=[];
+  const d7=fmtDate(addDays(new Date(),-7)),today=fmtDate(new Date());
+  // Baisse / montée : taux de contact 7 j vs 30 j (agrégats Supabase produit×zone, garde-fous d'échantillon)
+  PERF_AGG.forEach(a=>{
+    if(a.n7>=5&&a.n30>=15){
+      const r7=a.c7/a.n7,r30=a.c30/a.n30;
+      const nom=a.produit+' '+(a.dim||'')+(a.prov?' (Prov)':' (IDF)');
+      if(r30>=0.05&&r7<r30*0.35)A.push(['rd','📉 FORTE BAISSE : « '+nom+' » — '+(r7*100).toFixed(0)+'💬/100 sur 7 j contre '+(r30*100).toFixed(0)+' sur 30 j. Vérifier prix / photo / concurrence.']);
+      else if(r7>=0.2&&r7>r30*2)A.push(['gn','📈 DEVENU PERFORMANT : « '+nom+' » — '+(r7*100).toFixed(0)+'💬/100 sur 7 j (30 j : '+(r30*100).toFixed(0)+'). Envisager ↑ pression ou 🔥 boost.']);
+    }
+  });
+  // Surpublication : un produit dépasse 30 % des publications de sa zone sur 7 j
+  [['IDF',r=>r.dept!=='PROV'],['Province',r=>r.dept==='PROV']].forEach(([zl,f])=>{
+    const zr=RECS.filter(r=>r.date_pub>=d7&&r.date_pub<=today&&f(r));
+    if(zr.length<20)return;
+    const by={};zr.forEach(r=>{const k=r.produit+' '+(r.dim||'');by[k]=(by[k]||0)+1;});
+    Object.entries(by).forEach(([k,n])=>{if(n>zr.length*0.3)A.push(['am','⚠️ SURPUBLIÉ ('+zl+') : « '+k+' » = '+n+'/'+zr.length+' publications sur 7 j ('+Math.round(n/zr.length*100)+' %) — le plafond vise 30 %.']);});
+  });
+  // Sous-testés : produits actifs jamais publiés dans la fenêtre
+  const jam=PRODS.filter(p=>p.actif!==false&&!RECS.some(r=>r.produit===p.nom&&r.dim===p.dim));
+  if(jam.length)A.push(['ac','🧪 SOUS-TESTÉS : '+jam.length+' produit(s) actif(s) jamais publié(s) sur 14 j (ex. « '+jam[0].nom+' '+(jam[0].dim||'')+' ») — l\'exploration (10 %) va les proposer.']);
+  // Écarts catalogue maxiconfort.fr
+  let ecarts=0;PRODS.filter(p=>p.actif!==false).forEach(p=>{const s=matchSite(p);if(s&&(s.dispo===false||Math.abs(s.prix-p.prix)>=1))ecarts++;});
+  if(ecarts)A.push(['am','🔄 CATALOGUE : '+ecarts+' écart(s) prix/dispo avec maxiconfort.fr — à valider dans la carte « Catalogue maxiconfort.fr » ci-dessous.']);
+  if(!A.length)A.push(['ok','✅ Aucune alerte — le moteur tourne normalement.']);
+  const C={gn:'var(--gn)',ac:'var(--ac)',am:'var(--am)',rd:'var(--rd)',ok:'var(--tx2)'};
+  el.innerHTML=A.slice(0,10).map(([t,msg])=>`<div style="border-left:3px solid ${C[t]};padding:6px 12px;background:var(--sf2);border-radius:0 var(--r) var(--r) 0">${esc(msg)}</div>`).join('');
 }
 // ── FIABILISATION : bandeau des 3 horizons (agrégats Supabase, tous produits confondus) ──
 function renderHorizons(){
