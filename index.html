@@ -1,10 +1,10 @@
-<!-- MAXICONFORT LBC v4.6 -->
+<!-- MAXICONFORT LBC v4.7 -->
 <!DOCTYPE html>
 <html lang="fr" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maxiconfort LBC v4.6</title>
+<title>Maxiconfort LBC v4.7</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 [data-theme=dark]{--bg:#080b12;--sf:#0e1420;--sf2:#141c2e;--sf3:#1a2438;--bd:#1e2d45;--bd2:#263550;--tx:#e8edf5;--tx2:#7a8fad;--tx3:#3d5070;--ac:#3b82f6;--ac2:#2563eb;--gl:rgba(59,130,246,.15);--gn:#10b981;--gn2:rgba(16,185,129,.12);--am:#f59e0b;--am2:rgba(245,158,11,.12);--rd:#ef4444;--rd2:rgba(239,68,68,.12);--sh:0 8px 32px rgba(0,0,0,.4)}
@@ -245,7 +245,7 @@ tr:hover td{background:var(--sf2)}
   <div class="lb">
     <div class="lic">MC</div>
     <div class="lt">Maxiconfort LBC</div>
-    <div class="ls2">Gestionnaire publications v4.6 — moteur finalisé 7/30/90 j</div>
+    <div class="ls2">Gestionnaire publications v4.7 — moteur fiabilisé 7/30/90 j</div>
     <div id="acc-fields">
       <label class="ll">Email du compte</label>
       <input class="li lim" id="email" type="email" placeholder="email@exemple.fr" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
@@ -430,6 +430,7 @@ tr:hover td{background:var(--sf2)}
   <div style="padding:9px 20px;background:var(--sf2);border-bottom:1px solid var(--bd)"><button class="btn gh" onclick="goTab('calendrier')" style="font-size:12px;font-weight:700">← Calendrier</button></div>
   <div style="padding:20px;max-width:980px">
     <div class="ft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Pilotage — horizons 7 / 30 / 90 jours</div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--tx3);font-family:var(--m)">Horizon d'analyse :</span><button class="btn" id="hz-7" onclick="setHorizon(7)">7 j</button><button class="btn p" id="hz-30" onclick="setHorizon(30)">30 j</button><button class="btn" id="hz-90" onclick="setHorizon(90)">90 j</button><span style="font-size:10px;color:var(--tx3);font-family:var(--m)">appliqué aux KPI /100, Tops et Top/Flop combinaisons</span></div>
     <div id="dash-tiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:12px"></div>
     <div id="dash-horizons" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;font-family:var(--m)"></div>
     <div id="dash-kpi100" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:18px"></div>
@@ -441,7 +442,7 @@ tr:hover td{background:var(--sf2)}
       <button class="btn p" style="margin-top:10px" onclick="genFromReco()">⚡ Générer demain selon ces recommandations</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-      <div class="gen-card" style="margin:0"><div class="gen-t">🔥 Top combinaisons 14 j</div><div id="dash-combo-top" style="font-size:12px"></div></div>
+      <div class="gen-card" style="margin:0"><div class="gen-t">🔥 Top combinaisons</div><div id="dash-combo-top" style="font-size:12px"></div></div>
       <div class="gen-card" style="margin:0"><div class="gen-t">💀 Flop combinaisons</div><div id="dash-combo-flop" style="font-size:12px"></div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
@@ -1562,7 +1563,8 @@ function perfScore100(a,prod){
   s+=Math.min(25,(a.contacts/a.n)*50);            // 0,5 contact/pub = plein score contacts
   s+=Math.min(25,(a.ventes/a.n)*167);             // 0,15 vente/pub = plein score ventes
   const mg=prod?margeOf(prod):null;s+=mg!=null?Math.max(0,Math.min(20,mg/2)):10; // 40 % de marge = plein score
-  s+=Math.min(15,(a.vues/a.n)/2);                 // 30 vues/pub = plein score vues
+  // v4.7 : les vues ne doivent pas porter le score — 0 contact sur ≥30 pubs plafonne les vues à 5 pts
+  s+=Math.min(a.contacts>0||a.n<30?15:5,(a.vues/a.n)/2);
   s+=a.lastd<=3?10:a.lastd<=7?6:2;                // récence
   s+=prod&&prod.priorite==='Très haute'?5:3;      // priorité commerciale
   return Math.round(s);
@@ -1580,7 +1582,8 @@ function _scoreNums(n,contacts,ventes,vues,ca,prod,recent){
   s+=Math.min(25,(contacts/n)*50);
   s+=Math.min(25,(ventes/n)*167);
   const mg=prod?margeOf(prod):null;s+=mg!=null?Math.max(0,Math.min(20,mg/2)):10;
-  s+=Math.min(15,(vues/n)/2);
+  // v4.7 : 0 contact sur ≥30 pubs → les vues plafonnent à 5 pts (CONTACT > VENTE > MARGE, jamais les vues seules)
+  s+=Math.min(contacts>0||n<30?15:5,(vues/n)/2);
   s+=recent?10:4;
   s+=prod&&prod.priorite==='Très haute'?5:3;
   return Math.round(s);
@@ -1594,7 +1597,14 @@ function blendedScore(p,isPr){
   let ss=0,sw=0;
   wins.forEach(([n,c,v,vu,ca,w])=>{if(n>=5){const sc=_scoreNums(n,c,v,vu,ca,p,recent);if(sc!=null){ss+=sc*w;sw+=w;}}});
   if(!sw)return null;
-  return{score:Math.round(ss/sw),n:row.n90};
+  let sc=ss/sw;
+  // v4.7 : malus de tendance — effondrement du taux de contact sur 7 j (≥10 pubs) vs 30 j → -20 %.
+  // Un ancien champion qui chute BAISSE progressivement (les horizons 30/90 amortissent, le malus accélère).
+  if(row.n7>=10&&row.n30>row.n7){
+    const r7=row.c7/row.n7,r30=row.c30/row.n30;
+    if(r30>0.05&&r7<r30*0.3)sc*=0.8;
+  }
+  return{score:Math.round(sc),n:row.n90};
 }
 // Score d'une combinaison produit×ville (30 j pondéré 60 % + 90 j 40 %), null si <5 pubs.
 function blendedCombo(p,ville){
@@ -1998,17 +2008,16 @@ function renderDash(){
     cw.innerHTML='<table style="table-layout:auto"><thead><tr><th>Jour</th><th>🗼 IDF</th><th>🅰 Prov A</th><th>🅱 Prov B</th></tr></thead><tbody>'+crows+'</tbody></table>'+
       '<div style="font-size:11px;color:var(--tx3);margin-top:6px">⚠ = créneaux passés non publiés → règle : chaque journée commence par finir la veille. Prov B démarre le lundi 07/09.</div>';
   }
-  // ── Tops produits / villes (dès qu'il y a des données perf) ──
-  const bp=_agg(RECS,'produit'),bv=_agg(RECS,'ville');
-  const top=(m,n)=>Object.entries(m).filter(([,a])=>a.contacts||a.ventes).sort((x,y)=>(y[1].ventes-x[1].ventes)||(y[1].contacts-x[1].contacts)).slice(0,n);
-  const tprod=top(bp,5),tville=top(bv,5);
-  const list=(title,rows)=>`<div class="gen-card" style="margin:0"><div class="gen-t">${title}</div>${rows.length?rows.map(([k,a])=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(k)}</span><span style="font-family:var(--m);white-space:nowrap;color:var(--tx2)">${a.contacts}💬 ${a.ventes}🛒${a.ca?' '+a.ca.toFixed(0)+'€':''}</span></div>`).join(''):'<div style="font-size:12px;color:var(--tx3)">Pas encore de données — faites saisir les 📊</div>'}</div>`;
-  // Top dimensions (agrégats 90 j Supabase) + Top départements (vue lbc_perf_dept) — priorité contacts/ventes, jamais les vues seules
-  const bdim={};PERF_AGG.forEach(a=>{const k=a.dim||'—';if(!bdim[k])bdim[k]={contacts:0,ventes:0,ca:0,n:0};bdim[k].contacts+=a.c90;bdim[k].ventes+=a.v90;bdim[k].ca+=Number(a.ca90)||0;bdim[k].n+=a.n90;});
-  const tdim=Object.entries(bdim).filter(([,a])=>a.contacts||a.ventes).sort((x,y)=>(y[1].ventes-x[1].ventes)||(y[1].contacts-x[1].contacts)).slice(0,5);
-  const bdept={};PERF_DEPT.filter(x=>x.dept!=='PROV').forEach(x=>{bdept[x.dept]={contacts:x.c90,ventes:x.v90,ca:Number(x.ca90)||0,n:x.n90};});
-  const tdept=Object.entries(bdept).filter(([,a])=>a.contacts||a.ventes).sort((x,y)=>(y[1].ventes-x[1].ventes)||(y[1].contacts-x[1].contacts)).slice(0,5);
-  document.getElementById('dash-tops').innerHTML=list('🏆 Top produits',tprod)+list('🏙 Top villes',tville)+list('📐 Top dimensions (90 j)',tdim)+list('🗺 Top départements (90 j)',tdept);
+  // ── Tops sur l'HORIZON choisi (vues Supabase) : produits, villes, dimensions, départements — 4 KPI /100 ──
+  const bp=_agg(RECS,'produit'),bv=_agg(RECS,'ville'); // fenêtre 14 j locale, utilisée par les recos/décisions plus bas
+  const aggBy=(rows,keyFn,prodFn)=>{const m={};rows.forEach(r=>{const k=keyFn(r);if(k==null)return;const a=hzRow(r);if(!m[k])m[k]={n:0,c:0,v:0,vu:0,ca:0,prod:prodFn?prodFn(r):null};const x=m[k];x.n+=a.n;x.c+=a.c;x.v+=a.v;x.vu+=a.vu;x.ca+=a.ca;});return m;};
+  const topOf=m=>Object.entries(m).filter(([,a])=>a.n&&(a.c||a.v)).sort((x,y)=>(y[1].v-x[1].v)||(y[1].c-x[1].c)).slice(0,5);
+  const tprod=topOf(aggBy(PERF_AGG,r=>r.produit+' '+(r.dim||''),r=>PRODS.find(p=>p.nom===r.produit&&(p.dim||'')===(r.dim||''))));
+  const tville=topOf(aggBy(PERF_VILLE,r=>r.ville));
+  const list=(title,rows)=>`<div class="gen-card" style="margin:0"><div class="gen-t">${title}</div>${rows.length?rows.map(([k,a])=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(k)}</span><span style="font-family:var(--m);white-space:nowrap;color:var(--tx2)">${a.n} pubs · ${kpi100Str(a,a.prod)} · ${sampleLabel(a.n)}</span></div>`).join(''):'<div style="font-size:12px;color:var(--tx3)">Pas encore de contacts/ventes relevés sur cet horizon</div>'}</div>`;
+  const tdim=topOf(aggBy(PERF_AGG,r=>r.dim||'—'));
+  const tdept=topOf(aggBy(PERF_DEPT.filter(x=>x.dept!=='PROV'),r=>r.dept));
+  document.getElementById('dash-tops').innerHTML=list('🏆 Top produits ('+HORIZON+' j)',tprod)+list('🏙 Top villes ('+HORIZON+' j)',tville)+list('📐 Top dimensions ('+HORIZON+' j)',tdim)+list('🗺 Top départements ('+HORIZON+' j)',tdept);
   // ── Recommandations à règles ──
   const recos=[];
   const perfCount=RECS.filter(r=>r.vues||r.messages||r.appels||r.vendu).length;
@@ -2067,6 +2076,14 @@ function renderDepts(){
       <td style="font-size:10px;font-family:var(--m);color:var(--tx3)">${sampleLabel(x.v.n90)}</td></tr>`).join('')+'</tbody></table>'+
     '<div style="font-size:10px;color:var(--tx3);margin-top:6px;font-family:var(--m)">Source : vue Supabase 90 j (toutes annonces relevées), pas seulement la fenêtre 14 j. ↗/↘ = taux de contact 7 j vs 30 j.</div>';
 }
+// ── FIABILISATION v4.7 : horizon d'analyse global (7/30/90 j, 30 par défaut) + KPI /100 ──
+let HORIZON=30;
+function setHorizon(h){HORIZON=h;[7,30,90].forEach(x=>{const b=document.getElementById('hz-'+x);if(b)b.classList.toggle('p',x===h);});renderDash();}
+function hzRow(r){const h=HORIZON;return{n:Number(r['n'+h])||0,c:Number(r['c'+h])||0,v:Number(r['v'+h])||0,vu:Number(r['vu'+h])||0,ca:Number(r['ca'+h])||0};}
+// Marge estimée sur agrégats : CA saisi sinon prix produit × ventes, moins achat (ratio) et livraison
+function margeEstTot(ca,v,prod){const R=rentaParams();let pv=Number(ca)||0;if(!pv&&v&&prod)pv=v*(Number(prod.prix)||0);if(!pv)return 0;return pv/1.2-pv*R.achat_ratio-R.livraison*(v||0);}
+// Les 4 KPI /100 côte à côte — l'objectif commercial : CONTACT → VENTE → MARGE (les vues restent secondaires)
+function kpi100Str(a,prod){if(!a.n)return'—';const m=margeEstTot(a.ca,a.v,prod);return (a.c/a.n*100).toFixed(0)+'💬 '+(a.v/a.n*100).toFixed(1)+'🛒 '+(a.ca/a.n*100).toFixed(0)+'€ '+(m/a.n*100).toFixed(0)+'💰 /100';}
 // ── FINALISATION (05/09) : 📷 suivi Photos A/B/C — comparer les variantes de photo principale ──
 function renderPhotos(){
   const el=document.getElementById('dash-photos');if(!el)return;
@@ -2133,50 +2150,83 @@ function renderHorizons(){
 // ── V4-OPT : l'indicateur le plus important — CONTACTS / VENTES / MARGE pour 100 annonces ──
 function renderKPI100(){
   const el=document.getElementById('dash-kpi100');if(!el)return;
-  const pub=RECS.filter(r=>r.validation==='ON');
-  const n=pub.length||1;
-  const a=perfAggOf(pub);
-  const marge=pub.filter(r=>r.vendu).reduce((s,r)=>{const e=rentaOf({prix:Number(r.ca)||Number(r.prix)||0});return s+(e?e.margeE:0);},0);
-  const big=(l,v,c,t)=>`<div title="${t||''}" style="background:var(--sf);border:2px solid ${c};border-radius:var(--rl);padding:14px"><div class="sl">${l}</div><div style="font-size:30px;font-weight:800;letter-spacing:-1.5px;color:${c}">${v}</div><div style="font-size:10px;color:var(--tx3);font-family:var(--m)">sur ${pub.length} annonces publiées · ${sampleLabel(pub.length)}</div></div>`;
-  el.innerHTML=big('💬 CONTACTS / 100 annonces',(a.contacts/n*100).toFixed(1),'var(--ac)','Messages + appels ramenés à 100 publications')+
-    big('🛒 VENTES / 100 annonces',(a.ventes/n*100).toFixed(1),'var(--gn)')+
-    big('💰 MARGE / 100 annonces',(marge/n*100).toFixed(0)+' €','var(--gn)','Marge estimée (ratio achat 35 %) des ventes saisies, ramenée à 100 publications');
+  const S=k=>PERF_AGG.reduce((s,a)=>s+(Number(a[k])||0),0);
+  const h=HORIZON,n=S('n'+h),c=S('c'+h),v=S('v'+h),ca=S('ca'+h);
+  const marge=margeEstTot(ca,v,null);
+  const N=n||1;
+  const big=(l,vv,cc,t)=>`<div title="${t||''}" style="background:var(--sf);border:2px solid ${cc};border-radius:var(--rl);padding:14px"><div class="sl">${l}</div><div style="font-size:30px;font-weight:800;letter-spacing:-1.5px;color:${cc}">${vv}</div><div style="font-size:10px;color:var(--tx3);font-family:var(--m)">sur ${n} pubs (${h} j) · ${sampleLabel(n)}</div></div>`;
+  el.innerHTML=big('💬 CONTACTS / 100 pubs',(c/N*100).toFixed(1),'var(--ac)','Messages + appels ramenés à 100 publications — horizon '+h+' j')+
+    big('🛒 VENTES / 100 pubs',(v/N*100).toFixed(1),'var(--gn)')+
+    big('💶 CA / 100 pubs',(ca/N*100).toFixed(0)+' €','var(--gn)','Chiffre d\'affaires saisi ramené à 100 publications')+
+    big('💰 MARGE / 100 pubs',(marge/N*100).toFixed(0)+' €','var(--gn)','Marge estimée (ratio achat '+Math.round(rentaParams().achat_ratio*100)+' %, livraison '+rentaParams().livraison+' €) ramenée à 100 publications');
 }
 // ── V4-OPT : Top / Flop combinaisons produit × ville (score /100 + taille d'échantillon) ──
+// v4.7 : Top/Flop combinaisons produit × dimension × ville sur l'HORIZON choisi (vue Supabase 90 j, plus la fenêtre 14 j)
 function comboStats(){
-  const m={};
-  RECS.filter(r=>r.validation==='ON').forEach(r=>{
-    const k=r.produit+' '+(r.dim||'')+' × '+r.ville;
-    (m[k]=m[k]||[]).push(r);
-  });
-  return Object.entries(m).map(([k,recs])=>{
-    const prod=PRODS.find(p=>p.nom===recs[0].produit&&p.dim===recs[0].dim);
-    const a=perfAggOf(recs);
-    return{k,a,score:perfScore100(a,prod)};
-  }).filter(x=>x.score!=null);
+  return PERF_VILLE.map(r=>{
+    const a=hzRow(r);
+    if(a.n<3)return null;
+    const prod=PRODS.find(p=>p.nom===r.produit&&(p.dim||'')===(r.dim||''));
+    const score=_scoreNums(a.n,a.c,a.v,a.vu,a.ca,prod,(Number(r.n7)||0)>0);
+    return score==null?null:{k:r.produit+' '+(r.dim||'')+' × '+r.ville,a,score,prod};
+  }).filter(Boolean);
 }
 function renderCombos(){
   const t=document.getElementById('dash-combo-top'),f=document.getElementById('dash-combo-flop');if(!t)return;
-  const all=comboStats().filter(x=>x.a.n>=3);
-  const line=x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.k)}</span><span style="font-family:var(--m);white-space:nowrap;color:var(--tx2)"><b style="color:${x.score>=70?'var(--gn)':x.score>=45?'var(--am)':'var(--rd)'}">${x.score}</b>/100 · ${x.a.n} pubs · ${(x.a.contacts/x.a.n*100).toFixed(0)}💬/100 · ${x.a.ventes}🛒${x.a.ca?" · "+(x.a.ca/x.a.n*100).toFixed(0)+"€/100":""} · ${sampleLabel(x.a.n)}</span></div>`;
-  const top=all.sort((a,b)=>b.score-a.score).slice(0,10);
-  t.innerHTML=top.length?top.map(line).join(''):'<span style="color:var(--tx3)">Minimum 3 publications par combinaison — les données arrivent avec mes relevés quotidiens.</span>';
-  const flop=all.filter(x=>x.a.n>=5&&x.a.contacts===0).sort((a,b)=>b.a.n-a.a.n).slice(0,5);
-  f.innerHTML=flop.length?flop.map(line).join(''):'<span style="color:var(--tx3)">Aucune combinaison gaspilleuse détectée (≥5 pubs, 0 contact).</span>';
+  const all=comboStats();
+  const line=x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.k)}</span><span style="font-family:var(--m);white-space:nowrap;color:var(--tx2)"><b style="color:${x.score>=70?'var(--gn)':x.score>=45?'var(--am)':'var(--rd)'}">${x.score}</b>/100 · ${x.a.n} pubs · ${kpi100Str(x.a,x.prod)} · ${sampleLabel(x.a.n)}</span></div>`;
+  const top=[...all].sort((a,b)=>b.score-a.score).slice(0,10);
+  t.innerHTML=(top.length?top.map(line).join(''):'<span style="color:var(--tx3)">Minimum 3 publications par combinaison sur l\'horizon choisi — les données arrivent avec les relevés quotidiens.</span>')+
+    `<div style="font-size:10px;color:var(--tx3);margin-top:6px;font-family:var(--m)">Horizon ${HORIZON} j · KPI /100 pubs : 💬 contacts · 🛒 ventes · € CA · 💰 marge estimée</div>`;
+  const flop=all.filter(x=>x.a.n>=5&&x.a.c===0).sort((a,b)=>b.a.n-a.a.n).slice(0,5);
+  f.innerHTML=flop.length?flop.map(line).join(''):'<span style="color:var(--tx3)">Aucune combinaison gaspilleuse détectée (≥5 pubs, 0 contact) sur '+HORIZON+' j.</span>';
 }
 // ── V4-OPT : recommandation concrète du lendemain + génération 1 clic ──
+let RECO_META=[];
 function renderReco(){
   const el=document.getElementById('dash-reco');if(!el)return;
   const ds=fmtDate(addDays(new Date(),1));
-  const counts={};
+  const counts={},meta={};
   [[false,60],[true,40]].forEach(([isPr,nb])=>{
     const rng=seedRand('alloc|'+ds+'|'+(isPr?'P':'I'));
-    allocSequence(getProdPool(isPr,'mix'),nb,ds,rng,isPr).forEach(p=>{const k=p.nom+' '+(p.dim||'')+(isPr?' (Prov)':' (IDF)');counts[k]=(counts[k]||0)+1;});
+    allocSequence(getProdPool(isPr,'mix'),nb,ds,rng,isPr).forEach(p=>{const k=p.nom+' '+(p.dim||'')+(isPr?' (Prov)':' (IDF)');counts[k]=(counts[k]||0)+1;if(!meta[k])meta[k]={p,isPr};});
   });
   const rows=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  RECO_META=rows.map(([k])=>meta[k]);
   el.innerHTML='<div style="margin-bottom:6px;color:var(--tx2)">Demain ('+ds+'), avec 60 IDF + 40 Province, le moteur répartira ainsi :</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:2px 14px">'+
-    rows.map(([k,v])=>`<div style="display:flex;justify-content:space-between;border-bottom:1px dashed var(--bd);padding:2px 0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(k)}</span><b style="font-family:var(--m);color:var(--ac)">${v}</b></div>`).join('')+'</div>';
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:2px 14px">'+
+    rows.map(([k,v],i)=>`<div style="border-bottom:1px dashed var(--bd);padding:2px 0"><div style="display:flex;justify-content:space-between;gap:6px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(k)}</span><span style="white-space:nowrap"><b style="font-family:var(--m);color:var(--ac)">${v}</b> <a href="javascript:void(0)" onclick="toggleWhy(${i})" style="font-size:10px;color:var(--tx3);text-decoration:underline">Pourquoi ?</a></span></div><div id="why-${i}" hidden style="font-size:11px;color:var(--tx2);line-height:1.6;padding:4px 0 4px 10px;border-left:2px solid var(--ac);margin:3px 0"></div></div>`).join('')+'</div>';
+}
+// v4.7 : le moteur est TRANSPARENT — chaque recommandation s'explique en un clic
+function toggleWhy(i){
+  const d=document.getElementById('why-'+i);if(!d)return;
+  if(!d.hidden){d.hidden=true;return;}
+  const m=RECO_META[i];
+  d.innerHTML=m?recoWhy(m.p,m.isPr).map(x=>'• '+esc(x)).join('<br>'):'—';
+  d.hidden=false;
+}
+function recoWhy(p,isPr){
+  const out=[];
+  const ds=fmtDate(addDays(new Date(),1));
+  const w0=prodPoidsZone(p,isPr),we=effWeight(p,ds,isPr);
+  out.push('pression '+(isPr?'Province':'IDF')+' : '+w0+'/100 → classe '+CLASS_BADGE[prodClass(p,isPr)]);
+  const b=blendedScore(p,isPr);
+  if(b)out.push('score global '+b.score+'/100 pondéré 7/30/90 j, sur '+b.n+' publications ('+sampleLabel(b.n)+')');
+  else out.push('moins de 10 publications sur 90 j → part test/exploration ('+sampleLabel((PERF_AGG.find(a=>a.produit===p.nom&&(a.dim||'')===(p.dim||'')&&a.prov===!!isPr)||{n90:0}).n90)+')');
+  const row=PERF_AGG.find(a=>a.produit===p.nom&&(a.dim||'')===(p.dim||'')&&a.prov===!!isPr);
+  if(row){
+    if(row.n30>=5)out.push((row.c30/row.n30*100).toFixed(0)+' contacts et '+(row.v30/row.n30*100).toFixed(1)+' ventes pour 100 publications (30 j)');
+    if(row.n7>=5&&row.n30>0){const r7=row.c7/row.n7,r30=row.c30/row.n30;out.push('tendance 7 j : '+(r7>r30*1.3?'en hausse ↗':r7<r30*0.7?'en baisse ↘':'stable →')+' ('+(r7*100).toFixed(0)+' vs '+(r30*100).toFixed(0)+'💬/100)');}
+  }
+  if(!isPr){
+    const bd={};PERF_VILLE.filter(r=>r.produit===p.nom&&(r.dim||'')===(p.dim||'')&&r.dept&&r.dept!=='PROV').forEach(r=>{bd[r.dept]=(bd[r.dept]||0)+(Number(r.c90)||0);});
+    const best=Object.entries(bd).sort((a,b)=>b[1]-a[1])[0];
+    if(best&&best[1]>0)out.push('meilleur département : '+best[0]+' ('+best[1]+' contacts sur 90 j)');
+  }
+  if(boostActive(p,ds))out.push('🔥 boost manuel +'+p.boost_pct+' % jusqu\'au '+p.boost_until);
+  if(we!==w0)out.push('poids effectif ×'+(we/Math.max(1,w0)).toFixed(1)+' après apprentissage (performance mesurée)');
+  const m=margeOf(p);if(m!=null)out.push('marge ~'+m+' % ('+(p.marge!=null?'réelle':'estimée ratio achat')+')');
+  return out;
 }
 function genFromReco(){
   const ds=fmtDate(addDays(new Date(),1));
@@ -2254,8 +2304,8 @@ function renderDecisions(){
   const best=(m,lbl,ico)=>{const e=Object.entries(m).filter(([,a])=>a.ventes||a.contacts).sort((x,y)=>(y[1].ventes-x[1].ventes)||(y[1].contacts-x[1].contacts))[0];if(e)lines.push(['gn',ico+' '+lbl+' : « '+e[0]+' » — '+e[1].contacts+' contacts, '+e[1].ventes+' vente(s)'+(e[1].ca?', '+e[1].ca.toFixed(0)+' €':'')]);};
   best(bp,'Meilleur produit','🏆');best(bd,'Meilleure dimension','🏆');best(bv,'Meilleure ville','🏆');best(bc,'Meilleur couple produit × ville','🏆');
   Object.entries(bp).forEach(([p,a])=>{
-    if((a.ventes>0||a.contacts>=3)&&a.pubs<10)lines.push(['ac','🔥 À AUGMENTER : « '+p+' » — '+a.contacts+' contacts / '+a.ventes+' vente(s) en seulement '+a.pubs+' publications. Monter son poids.']);
-    if(a.pubs>=8&&a.contacts===0)lines.push(['am','⚠️ À RÉDUIRE : « '+p+' » — '+a.pubs+' publications, 0 contact. Baisser son poids ou revoir prix/photo/titre.']);
+    if((a.ventes>0||a.contacts>=3)&&a.pubs<10)lines.push(['ac','🔥 À AUGMENTER : « '+p+' » — '+a.contacts+' contacts / '+a.ventes+' vente(s) en seulement '+a.pubs+' publications ('+sampleLabel(a.pubs)+' — à confirmer avec plus de volume). Monter son poids.']);
+    if(a.pubs>=8&&a.contacts===0)lines.push(['am','⚠️ À RÉDUIRE : « '+p+' » — '+a.pubs+' publications, 0 contact ('+sampleLabel(a.pubs)+'). Baisser son poids ou revoir prix/photo/titre.']);
   });
   const jamais=PRODS.filter(p=>p.actif!==false&&!RECS.some(r=>r.produit===p.nom&&r.dim===p.dim)).slice(0,3);
   jamais.forEach(p=>lines.push(['ac','🧪 À TESTER : « '+p.nom+' '+(p.dim||'')+' » — jamais publié dans la fenêtre. L\'exploration (10 %) va le proposer.']));
@@ -2311,18 +2361,26 @@ function matchSite(p){
   });
   return cand.sort((a,b)=>(b.dispo-a.dispo))[0]||null;
 }
+let CS_IGN=new Set(),CS_PRIX=[];
+function csIgnore(id){CS_IGN.add(id);renderCatSite();}
+async function csAcceptAll(){
+  const list=[...CS_PRIX];
+  for(const it of list){const p=PRODS.find(x=>x.id===it.id);if(p){p.prix=it.prix;try{await sbPatch('lbc_produits',it.id,{prix:it.prix,updated_at:new Date().toISOString()});}catch(e){syncErr(e);}}}
+  renderCatalogue();renderCatSite();
+  showToast('✓ '+list.length+' prix alignés','sur maxiconfort.fr (validation admin)');
+}
 function renderCatSite(){
   const el=document.getElementById('dash-catsite');if(!el)return;
   const info=document.getElementById('cs-info');
   if(!CATSITE.length){el.innerHTML='Catalogue site non chargé. Lancez le script <b>_sync_catalogue_site.js</b> (PC Borhen) puis resynchronisez.';return;}
   const last=CATSITE.reduce((m,c)=>c.updated_at>m?c.updated_at:m,'');
   if(info)info.textContent=CATSITE.length+' variantes · sync '+(last?last.substring(0,16).replace('T',' '):'?');
-  const rows=[];
-  PRODS.filter(p=>p.actif!==false).forEach(p=>{
+  const rows=[];CS_PRIX=[];
+  PRODS.filter(p=>p.actif!==false&&!CS_IGN.has(p.id)).forEach(p=>{
     const m=matchSite(p);if(!m)return;
     const diff=Math.round((m.prix-p.prix)*100)/100;
-    if(m.dispo===false)rows.push(`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd)"><span style="flex:1"><b>${esc(p.nom)} ${esc(p.dim||'')}</b> — épuisé/retiré sur le site</span><button class="btn d" style="font-size:10px;padding:3px 8px" onclick="updProd('${p.id}','actif',false)">⏸ Désactiver</button></div>`);
-    else if(Math.abs(diff)>=1)rows.push(`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd)"><span style="flex:1"><b>${esc(p.nom)} ${esc(p.dim||'')}</b> : LBC <b style="color:${diff<0?'var(--rd)':'var(--ac)'}">${p.prix} €</b> vs site <b>${m.prix} €</b></span><button class="btn" style="font-size:10px;padding:3px 8px" onclick="updProd('${p.id}','prix',${m.prix});renderCatSite()">→ Aligner à ${m.prix} €</button></div>`);
+    if(m.dispo===false)rows.push(`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd)"><span style="flex:1"><b>${esc(p.nom)} ${esc(p.dim||'')}</b> — dispo : en vente → <b style="color:var(--rd)">épuisé/retiré sur le site</b></span><button class="btn d" style="font-size:10px;padding:3px 8px" onclick="updProd('${p.id}','actif',false)">✓ Accepter (⏸ désactiver)</button><button class="btn gh" style="font-size:10px;padding:3px 8px" onclick="csIgnore('${p.id}')">Ignorer</button></div>`);
+    else if(Math.abs(diff)>=1){CS_PRIX.push({id:p.id,prix:m.prix});rows.push(`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd)"><span style="flex:1"><b>${esc(p.nom)} ${esc(p.dim||'')}</b> — prix : <b style="color:${diff<0?'var(--rd)':'var(--ac)'}">${p.prix} €</b> → <b>${m.prix} €</b> (site)</span><button class="btn" style="font-size:10px;padding:3px 8px" onclick="updProd('${p.id}','prix',${m.prix});renderCatSite()">✓ Accepter ${m.prix} €</button><button class="btn gh" style="font-size:10px;padding:3px 8px" onclick="csIgnore('${p.id}')">Ignorer</button></div>`);}
   });
   // 🆕 Produits du site sans équivalent LBC → bouton IMPORTER (validation admin, jamais automatique).
   // Objectif Borhen 03/09 : le CATALOGUE reste LARGE (tout ce que Maxiconfort vend), le MOTEUR décide de la pression.
@@ -2332,7 +2390,7 @@ function renderCatSite(){
     if(seenH.has(c.id))return;seenH.add(c.id);
     newRows.push(`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)"><span style="flex:1">${esc(c.titre)}${c.dim?' · '+esc(c.dim):''} — <b>${c.prix} €</b></span><button class="btn p" style="font-size:10px;padding:3px 8px" onclick="importSiteProd('${esc(c.id)}')">➕ Importer</button></div>`);
   });
-  el.innerHTML=(rows.length?`<div style="margin-bottom:6px;font-weight:700;color:var(--am)">⚠ ${rows.length} écart(s) détecté(s) — validation manuelle :</div>`+rows.join(''):'✅ Aucun écart de prix ni de disponibilité détecté entre LBC et maxiconfort.fr.')+
+  el.innerHTML=(rows.length?`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap"><span style="font-weight:700;color:var(--am)">⚠ ${rows.length} écart(s) détecté(s) — ancienne → nouvelle valeur, validation manuelle :</span>${CS_PRIX.length>1?`<button class="btn p" style="font-size:10px;padding:3px 10px" onclick="csAcceptAll()">✓ Tout accepter (${CS_PRIX.length} prix)</button>`:''}</div>`+rows.join(''):'✅ Aucun écart de prix ni de disponibilité détecté entre LBC et maxiconfort.fr.')+
     (newRows.length?`<div style="margin:10px 0 4px;font-weight:700;color:var(--ac)">🆕 ${newRows.length} variante(s) du site absentes du catalogue LBC — importables en 1 clic (arrivent en 🧪 TEST, pression 25) :</div>`+newRows.slice(0,20).join('')+(newRows.length>20?`<div style="font-size:10px;color:var(--tx3);padding:4px 0">… et ${newRows.length-20} autres (elles apparaîtront au fur et à mesure des imports)</div>`:''):'')+
     `<div style="margin-top:10px;font-size:11px;color:var(--tx3);font-family:var(--m)">Vérité catalogue/prix = maxiconfort.fr · vérité performance = données Leboncoin. Aucune modification automatique — tout passe par vos boutons.</div>`;
 }
