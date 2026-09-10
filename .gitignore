@@ -1,0 +1,28 @@
+# Fichiers de travail LOCAUX - ne doivent JAMAIS partir sur GitHub (depot public).
+# Raison : _regen_planning.js et _sync_catalogue_site.js contiennent l'acces au
+# jeton Supabase (PAT). Un « git add . » sans ce fichier publierait le secret.
+
+# Convention du projet : tout fichier prefixe « _ » est local
+# (_regen_planning.js, _sync_catalogue_site.js, _serve.ps1, _test_harness.html,
+#  _backup_index_*.html ...)
+_*
+
+# Instructions de travail locales
+CLAUDE.md
+
+# Journal de pilotage, audits, notes de mission
+growth/
+
+# Secrets et configuration d'environnement
+.env
+.env.*
+*.pem
+*.key
+
+# Divers
+node_modules/
+scratchpad/
+*.log
+Thumbs.db
+desktop.ini
+.DS_Store
