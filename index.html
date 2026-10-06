@@ -1291,8 +1291,8 @@ const TITRES_RECH={
 let LAST_TITRE_FAM='';
 function genTitre(nom,dim,ville,isPr,seed){
   const rng=seedRand(seed||(nom+'|'+dim+'|'+ville));
-  // matelas neutre : pas de « direct fabricant » (le matelas vient d'un fournisseur, l'affirmation n'est pas confirmée)
-  const b=(isPr?BENEFS_PROV:BENEFS_IDF).filter(x=>!(matNeutre(nom)&&/fabricant/i.test(x)));
+  // matelas neutre et lit Nico : pas de « direct fabricant » (le produit vient d'un fournisseur, l'affirmation n'est pas confirmée)
+  const b=(isPr?BENEFS_PROV:BENEFS_IDF).filter(x=>!((matNeutre(nom)||kindOf(nom)==='nico')&&/fabricant/i.test(x)));
   const neutre=matNeutre(nom),kind=neutre?'matelas_neutre':kindOf(nom);
   const nd=(neutre&&String(nom).includes(dim))?nom:nom+' '+dim; // nom déjà porteur de la dimension : on ne la répète pas
   const S=[
