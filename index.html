@@ -1404,11 +1404,12 @@ function genDescription(r){
     add('Type','cadre de lit Nico');
     add('Dimensions couchage',dimP);
     add('Revêtement','simili cuir'+(coul?' '+coul:''));
-    if(avecMat)add('Matelas','INCLUS — mémoire de forme haute densité');else if(sansMat)add('Matelas','non inclus');
+    // 06/10/2026 : le matelas des packs Nico vient du fournisseur de dépannage — on n'annonce que l'épaisseur (ni mémoire de forme, ni OEKO-TEX, ni marque)
+    if(avecMat)add('Matelas','INCLUS — épaisseur 20 cm');else if(sansMat)add('Matelas','non inclus');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, emballé');
     ben=['Design élégant et chaleureux pour votre chambre.','Structure solide, montage simple.','Revêtement simili cuir facile à entretenir.'];
-    if(avecMat)ben.push('Livré avec matelas mémoire de forme : literie complète, prête à dormir.');
+    if(avecMat)ben.push('Livré avec son matelas de 20 cm : literie complète, prête à dormir.');
   }else if(kind==='superpose'){
     add('Type','lit superposé (gain de place)');
     if(/1\s*\+\s*1/.test(ln))add('Configuration','1 place en bas + 1 place en haut');
