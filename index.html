@@ -1405,7 +1405,7 @@ function genDescription(r){
     add('Dimensions couchage',dimP);
     add('Revêtement','simili cuir'+(coul?' '+coul:''));
     // 06/10/2026 : le matelas des packs Nico vient du fournisseur de dépannage — on n'annonce que l'épaisseur (ni mémoire de forme, ni OEKO-TEX, ni marque)
-    if(avecMat)add('Matelas','INCLUS — épaisseur 20 cm');else if(sansMat)add('Matelas','non inclus');
+    if(avecMat)add('Matelas','INCLUS — épaisseur 20 cm');else add('Matelas','non inclus');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, emballé');
     ben=['Design élégant et chaleureux pour votre chambre.','Structure solide, montage simple.','Revêtement simili cuir facile à entretenir.'];
@@ -1466,14 +1466,15 @@ function genDescription(r){
     '✅ Garantie légale 2 ans  ·  ✅ 14 jours pour changer d\'avis  ·  vendeur professionnel Maxiconfort',
     '',
     _pick(rng,cta),'',
-    genCatalog(rng,isPr),'',
+    ...((kind==='nico'&&isPr)?[]:[genCatalog(rng,isPr),'']),
     'Maxiconfort — literie & mobilier neufs.'
   ].join('\n');
 }
 
 // ── Publiabilité RÉELLE d'un produit dans une zone — SOURCE UNIQUE DE VÉRITÉ ──
 // La case « Dispo » (zone_pub) est un CHOIX ; la gamme est une CONTRAINTE :
-//   • Province = matelas uniquement (cat « Matelas seul Province », jamais de canapé) ;
+//   • Province = matelas (décision du 09/06/2026) + lits Nico seuls (décision Borhen du 07/10/2026, 5 zones de départ : voir NICO_PROV_ZONES) ;
+//     toujours dans la cat « Matelas seul Province », jamais de canapé ;
 //   • IDF = tout sauf les références Province, et un prix renseigné.
 // Sans cette distinction, le catalogue affichait « 🚚 CHAMPION » sur des lits coffres
 // jamais publiés en Province (12 produits concernés, constat du 10/09/2026).
@@ -1481,9 +1482,12 @@ function prodPubliable(p,isPr){
   if(!p||p.actif===false)return false;
   const z=p.zone_pub||'both';
   if(!(z==='both'||(isPr?z==='prov':z==='idf')))return false;
-  if(isPr)return p.cat==='Matelas seul Province'&&/matelas/i.test(p.nom||'')&&!/canap/i.test(p.nom||'')&&p.cat!=='Canapé';
+  if(isPr)return p.cat==='Matelas seul Province'&&/matelas|nico/i.test(p.nom||'')&&!/canap/i.test(p.nom||'')&&p.cat!=='Canapé';
   return p.cat!=='Matelas seul Province'&&Number(p.prix)>0;
 }
+// 07/10/2026 (décision Borhen) : en province, un lit Nico n'est proposé que dans ces zones de villes (table lbc_villes, colonne zone).
+const NICO_PROV_ZONES=['Lille','Toulouse','Lyon','Marseille','Bordeaux'];
+function prodZoneOK(p,zone,isPr){return !(isPr&&/nico/i.test((p&&p.nom)||''))||NICO_PROV_ZONES.includes(zone);}
 function getProdPool(isPr,mode){
   let pool=PRODS.filter(p=>prodPubliable(p,isPr));
   if(!pool.length)pool=PRODS;
@@ -1745,6 +1749,7 @@ function buildDay(ds,nb,st,en,mode,isPr){
     let prod=null,bestJ=-1,bestSc=-1,seen=0;
     for(let j=i;j<seq.length&&seen<8;j++){
       const c=seq[j];if(!c)continue;
+      if(!prodZoneOK(c,zone,isPr))continue;
       const kDay=ville+'|'+c.nom+'|'+c.dim;
       if(usedDay.has(kDay)||recent.has(kDay))continue;
       seen++;
@@ -1755,9 +1760,9 @@ function buildDay(ds,nb,st,en,mode,isPr){
     }
     if(bestJ>=0){prod=seq[bestJ];seq[bestJ]=seq[i];seq[i]=prod;}
     if(!prod){ // secours : accepte un produit déjà vu récemment plutôt qu'un trou
-      for(let j=i;j<seq.length;j++){const c=seq[j];if(c&&!usedDay.has(ville+'|'+c.nom+'|'+c.dim)){prod=c;seq[j]=seq[i];seq[i]=c;break;}}
+      for(let j=i;j<seq.length;j++){const c=seq[j];if(c&&prodZoneOK(c,zone,isPr)&&!usedDay.has(ville+'|'+c.nom+'|'+c.dim)){prod=c;seq[j]=seq[i];seq[i]=c;break;}}
     }
-    if(!prod)prod=basePool[Math.floor(rng()*basePool.length)]||seq[0];
+    if(!prod){const okPool=basePool.filter(p=>prodZoneOK(p,zone,isPr));prod=okPool[Math.floor(rng()*okPool.length)]||basePool[Math.floor(rng()*basePool.length)]||seq[0];}
     usedDay.add(ville+'|'+prod.nom+'|'+prod.dim);
     const photo=PHOTOS[phi%PHOTOS.length];phi++;
     const texte=TEXTES[txi%TEXTES.length];txi++;
