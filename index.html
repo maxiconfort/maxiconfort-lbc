@@ -1268,7 +1268,8 @@ const _pick=(rng,a)=>a[Math.floor(rng()*a.length)];
 // Règles 21/08 : produits NEUFS → aucun vocabulaire d'occasion/liquidation dans les titres.
 const ACCROCHES=['Neuf','Promo','Arrivage','Offre','Bon plan','À saisir','Nouveau','Top affaire','Exclusif','Stock disponible'];
 const BENEFS_IDF=['livraison rapide','livraison offerte','dispo immédiate','stock dispo','direct entrepôt','qualité garantie','prix direct','installation possible'];
-const BENEFS_PROV=['livraison France entière','livré chez vous','expédition rapide','direct fabricant','partout en France','colis suivi','livraison à domicile'];
+// 07/10/2026 (décision Borhen) : « direct fabricant » retiré des titres tant que la source de chaque référence n'est pas confirmée « stock usine / achat direct fabricant ».
+const BENEFS_PROV=['livraison France entière','livré chez vous','expédition rapide','partout en France','colis suivi','livraison à domicile'];
 const FINS=['à ne pas manquer','pour tout budget','idéal chambre','confort garanti','neuf sous emballage','qualité pro','meilleur rapport qualité-prix','prêt à dormir'];
 // V4 : familles de titres ORIENTÉS RECHERCHE par type de produit — ce que tape vraiment l'acheteur.
 // La famille utilisée est tracée (titre_fam) pour identifier plus tard celles qui convertissent le mieux.
