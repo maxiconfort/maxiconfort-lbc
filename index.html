@@ -1275,12 +1275,24 @@ const FINS=['à ne pas manquer','pour tout budget','idéal chambre','confort gar
 function kindOf(name){const ln=String(name).toLowerCase();return /ensemble|pack/.test(ln)?'ensemble':/coffre/.test(ln)?'coffre':/nico/.test(ln)?'nico':/superpos/.test(ln)?'superpose':/canap/.test(ln)?'canape':/sommier/.test(ln)?'sommier':'matelas';}
 // 07/10/2026 (décision Borhen) : un matelas dont le NOM ne contient ni « mémoire » ni « Dodo » est décrit sans aucune caractéristique non confirmée
 // (matelas 140x190 et 160x200 de 20 cm du fournisseur de dépannage, matelas 120x190 blanc). Ni mémoire de forme, ni OEKO-TEX, ni fermeté, ni housse.
+// RÈGLE PAR SOURCE (décision Borhen du 07/10/2026). Références dont le MATELAS vient actuellement du fournisseur de dépannage :
+// 120x190 (livré à plat, Île-de-France), 140x190 et 160x200 en 20 cm (livrés roulés). Les modèles 15 cm ne sont pas concernés.
+// Pour ces références : aucune ancienne caractéristique usine (mémoire de forme, haute densité, fermeté, housse, Dodo Confort).
+// QUAND LE STOCK USINE REVIENT sur une dimension : la retirer de DEP_DIMS (et rendre son ancien nom à la fiche si besoin).
+const DEP_DIMS={'120x190':1,'140x190':1,'160x200':1};
+function matDepannage(nom,dim){
+  const base=(String(dim||'').match(/\d{2,3}\s*x\s*\d{3}/)||[''])[0].replace(/\s/g,'');
+  return !!DEP_DIMS[base]&&!/15\s*cm/i.test(String(nom)+' '+String(dim));
+}
+// Produit acheté au fournisseur de dépannage (pour ne jamais écrire « direct fabricant ») : tout lit Nico, et tout produit contenant un matelas de dépannage.
+function prodDepannage(nom,dim){const n=String(nom);return kindOf(n)==='nico'||matNeutre(n)||(/ensemble|pack|matelas/i.test(n)&&!/sans\s+matelas/i.test(n)&&matDepannage(n,dim));}
 function matNeutre(name){return kindOf(name)==='matelas'&&!/m[ée]moire|dodo/i.test(String(name));}
 // Confirmé par Borhen le 06/10/2026 : les matelas 140x190 et 160x200 de 20 cm sont livrés ROULÉS (le 120x190 de dépannage est livré à plat : rien n'est dit).
 const MAT_ROULE=/^(140x190|160x200)$/;
 const TITRES_RECH={
   ensemble:[(n,d,v)=>`Ensemble Matelas Sommier ${d} Mémoire de Forme ${v}`,(n,d,v)=>`Matelas + Sommier ${d} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Pack Matelas Sommier ${d} Neuf ${v}`,(n,d,v)=>`Ensemble Literie ${d} Matelas + Sommier Neuf ${v}`],
   matelas:[(n,d,v)=>`Matelas ${d} Mémoire de Forme Neuf ${v}`,(n,d,v)=>`Matelas ${d} Neuf Livraison Rapide ${v}`],
+  ensemble_neutre:[(n,d,v)=>`Matelas + Sommier ${d} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Pack Matelas Sommier ${d} Neuf ${v}`,(n,d,v)=>`Ensemble Literie ${d} Matelas + Sommier Neuf ${v}`],
   matelas_neutre:[(n,d,v)=>`Matelas ${d} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Matelas ${d} Neuf Sous Emballage ${v}`],
   coffre:[(n,d,v)=>`Lit Coffre ${d} avec Rangement Neuf ${v}`,(n,d,v)=>`Lit Coffre ${d} Neuf Sommier Inclus ${v}`],
   sommier:[(n,d,v)=>`Sommier ${d} Bois Massif Neuf ${v}`],
@@ -1291,10 +1303,10 @@ const TITRES_RECH={
 let LAST_TITRE_FAM='';
 function genTitre(nom,dim,ville,isPr,seed){
   const rng=seedRand(seed||(nom+'|'+dim+'|'+ville));
-  // matelas neutre et lit Nico : pas de « direct fabricant » (le produit vient d'un fournisseur, l'affirmation n'est pas confirmée)
-  const b=(isPr?BENEFS_PROV:BENEFS_IDF).filter(x=>!((matNeutre(nom)||kindOf(nom)==='nico')&&/fabricant/i.test(x)));
-  const neutre=matNeutre(nom),kind=neutre?'matelas_neutre':kindOf(nom);
-  const nd=(neutre&&String(nom).includes(dim))?nom:nom+' '+dim; // nom déjà porteur de la dimension : on ne la répète pas
+  // produit acheté au fournisseur de dépannage : jamais « direct fabricant »
+  const b=(isPr?BENEFS_PROV:BENEFS_IDF).filter(x=>!(prodDepannage(nom,dim)&&/fabricant/i.test(x)));
+  const neutre=matNeutre(nom),kind=neutre?'matelas_neutre':(kindOf(nom)==='ensemble'&&matDepannage(nom,dim))?'ensemble_neutre':kindOf(nom);
+  const nd=((neutre||kind==='ensemble_neutre')&&String(nom).includes(dim))?nom:nom+' '+dim; // nom déjà porteur de la dimension : on ne la répète pas
   const S=[
     ()=>`${nd} ${_pick(rng,b)} ${ville}`,
     ()=>`${_pick(rng,ACCROCHES)} ${nd} ${ville}`,
@@ -1350,7 +1362,7 @@ const MAT_ITEMS=[
 ];
 const MAT_HEAD=['🛏️ TOUS NOS MATELAS — TOUTES TAILLES','🛏️ NOTRE GAMME DE MATELAS','🛏️ MATELAS MAXICONFORT — TOUTES DIMENSIONS','👉 BESOIN D\'UNE AUTRE TAILLE DE MATELAS ?','🛏️ MATELAS NEUFS, TOUTES TAILLES'];
 const MAT_LEAD=['Matelas neufs à mémoire de forme, livrés partout en France :','Tous nos matelas, neufs et garantis, disponibles en :','Matelas mémoire de forme & mousse, toutes tailles :','Retrouvez nos matelas dans toutes les dimensions :'];
-const MAT_TRUST=['✅ Neuf · Mémoire de forme · OEKO-TEX','✅ Matelas neufs, garantie 2 ans','✅ Neuf, sous emballage · Livraison France entière'];
+const MAT_TRUST=['✅ Matelas neufs, garantie 2 ans','✅ Neuf, sous emballage · Livraison France entière'];
 const MAT_END=['Donnez-nous votre taille, on a le matelas qu\'il vous faut !','Besoin d\'une dimension précise ? Écrivez-nous, réponse rapide.','Indiquez-nous votre taille de lit, on s\'occupe du reste 👍','Une autre taille ? Contactez-nous, livraison partout en France.'];
 // 07/10/2026 (décision Borhen) : le bloc commun ne dit plus rien de général sur nos matelas ; les listes CAT_* et MAT_* ci-dessus ne sont plus utilisées.
 const GAMME_NEUTRE='Découvrez également notre gamme de matelas, sommiers, ensembles literie et lits Maxiconfort. Plusieurs dimensions disponibles selon les stocks.';
@@ -1390,27 +1402,36 @@ function genDescription(r){
   const dimTxt=d.couch.length?d.couch.join(' + '):'',pers=_persons(d.w),dimP=dimTxt+(pers?' ('+pers+')':'');
   const B=[],add=(k,v)=>{if(v)B.push('• '+k+' : '+v);};
   let ben;
-  if(kind==='ensemble'){
+  const dep=matDepannage(name,r.dim); // le matelas de cette annonce vient du fournisseur de dépannage
+  if(kind==='ensemble'&&dep){
+    add('Type','ensemble matelas + sommier (literie complète)');
+    add('Dimensions',dimP);
+    const thickDep=thick||(MAT_ROULE.test((String(r.dim||'').match(/\d{2,3}\s*x\s*\d{3}/)||[''])[0].replace(/\s/g,''))?20:0); // 140x190 et 160x200 de dépannage : 20 cm
+    add('Matelas',[/matelas blanc/i.test(name)?'blanc':'',thickDep?'épaisseur '+thickDep+' cm':''].filter(Boolean).join(', '));
+    add('Sommier','bois massif, lattes multiplis haute résistance');
+    add('Garantie','2 ans (garantie légale de conformité)');
+    add('État','neuf, sous emballage');
+    ben=['Literie complète : matelas et sommier livrés ensemble.','Lattes multiplis souples : ventilent le matelas et épousent vos mouvements.','Structure en bois massif robuste, montage simple.'];
+  }else if(kind==='ensemble'){
     add('Type','ensemble matelas + sommier (literie complète)');
     add('Dimensions',dimP);
     add('Épaisseur matelas',thick?thick+' cm':'');
     add('Matelas','mousse à mémoire de forme haute densité');
     add('Sommier','bois massif, lattes multiplis haute résistance');
-    add('Certification','matelas OEKO-TEX Standard 100');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, sous emballage');
-    ben=['Mémoire de forme adaptative : la mousse épouse vos courbes et aligne la colonne.','Indépendance de couchage : plus de réveils quand votre partenaire bouge.','Lattes multiplis souples : ventilent le matelas et épousent vos mouvements.','Certifié OEKO-TEX Standard 100 : aucune substance nocive, sommeil sain.','Structure en bois massif robuste, montage simple.'];
+    ben=['Mémoire de forme adaptative : la mousse épouse vos courbes et aligne la colonne.','Indépendance de couchage : plus de réveils quand votre partenaire bouge.','Lattes multiplis souples : ventilent le matelas et épousent vos mouvements.','Structure en bois massif robuste, montage simple.'];
   }else if(kind==='coffre'){
     add('Type','lit coffre avec rangement intégré');
     add('Dimensions couchage',dimP);
     add('Revêtement','cuir PU premium'+(coul?' '+coul:''));
     add('Sommier','à lattes inclus');
     add('Rangement','grand coffre sous le sommier');
-    add('Matelas',avecMat?'INCLUS — mémoire de forme haute densité':'non inclus');
+    add('Matelas',avecMat?(dep?'INCLUS — épaisseur 20 cm':'INCLUS — mémoire de forme haute densité'):'non inclus');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, emballé');
     ben=['Grand coffre de rangement sous le sommier : un gain de place précieux.','Contour cuir PU premium : finition haut de gamme qui valorise la chambre.','Idéal petits espaces : rangez couettes, oreillers et linge de lit.','Sommier à lattes inclus : bon soutien et ventilation.'];
-    if(avecMat)ben.push('Livré avec matelas mémoire de forme : literie complète, prête à dormir.');
+    if(avecMat)ben.push(dep?'Livré avec son matelas de 20 cm : literie complète, prête à dormir.':'Livré avec matelas mémoire de forme : literie complète, prête à dormir.');
   }else if(kind==='nico'){
     add('Type','cadre de lit Nico');
     add('Dimensions couchage',dimP);
@@ -1464,12 +1485,11 @@ function genDescription(r){
     add('Épaisseur',thick?thick+' cm':'');
     add('Technologie','mousse à mémoire de forme haute densité');
     add('Fermeté',ferme);
-    add('Certification','OEKO-TEX Standard 100');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, sous emballage');
-    ben=['Mémoire de forme adaptative : la mousse épouse vos courbes et aligne la colonne.','Indépendance de couchage : plus de réveils quand votre partenaire bouge.','Régulation thermique : limite la chaleur et la transpiration nocturne.','Anti-acariens et hypoallergénique : idéal pour les personnes sensibles.','Certifié OEKO-TEX Standard 100 : aucune substance nocive, sommeil sain.'];
+    ben=['Mémoire de forme adaptative : la mousse épouse vos courbes et aligne la colonne.','Indépendance de couchage : plus de réveils quand votre partenaire bouge.','Régulation thermique : limite la chaleur et la transpiration nocturne.','Anti-acariens et hypoallergénique : idéal pour les personnes sensibles.'];
   }
-  const dejaDim=matNeutre(name)&&name.includes(String(r.dim||'\u0000')); // nom déjà porteur de la dimension : on ne la répète pas
+  const dejaDim=(matNeutre(name)||(kind==='ensemble'&&dep))&&name.includes(String(r.dim||'\u0000')); // nom déjà porteur de la dimension : on ne la répète pas
   const intro=dejaDim?[`${name} — neuf, sous emballage.`,`${name}. Neuf, jamais servi.`,`Découvrez notre ${name}, qualité Maxiconfort.`,`${name} disponible immédiatement.`]:[`${name} ${r.dim} — neuf, sous emballage.`,`${name}, ${r.dim}. Neuf, jamais servi.`,`Découvrez notre ${name} ${r.dim}, qualité Maxiconfort.`,`${name} ${r.dim} disponible immédiatement.`];
   const liv=isPr
     ?[`Livraison dans toute la France — ${r.ville} et alentours.`,`Expédition rapide partout en France, colis suivi.`,`Livré directement chez vous, où que vous soyez en France.`]
