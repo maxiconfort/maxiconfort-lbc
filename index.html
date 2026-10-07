@@ -1810,7 +1810,8 @@ function buildDay(ds,nb,st,en,mode,isPr){
     const photo=PHOTOS[phi%PHOTOS.length];phi++;
     const texte=TEXTES[txi%TEXTES.length];txi++;
     const titre=genTitre(prod.nom,prod.dim,ville,isPr,id);
-    const collabId=isPr?(i%2===0?'A':'B'):'';
+    // Décision Borhen 07/10/2026 : le lot B n'a plus d'exécutant → les 40 annonces province vont toutes au lot A.
+    const collabId=isPr?'A':'';
     const score=computeScore(prod,tier||'B',ville,ds);
     out.push({id,heure,ville,dept,date_pub:ds,produit:prod.nom,dim:prod.dim,prix:String(prod.prix),priorite:prod.priorite||'Haute',titre,titre_fam:LAST_TITRE_FAM,photo,texte,ref:prod.ref||'',collab_id:collabId,validation:'OFF',statut:'À publier',lien:'',commentaire:'',custom:false,score,updated_at:new Date().toISOString()});
   }
@@ -2066,7 +2067,7 @@ function renderDash(){
       }).join('')+'</tr>';
     }
     cw.innerHTML='<table style="table-layout:auto"><thead><tr><th>Jour</th><th>🗼 IDF</th><th>🅰 Prov A</th><th>🅱 Prov B</th></tr></thead><tbody>'+crows+'</tbody></table>'+
-      '<div style="font-size:11px;color:var(--tx3);margin-top:6px">⚠ = créneaux passés non publiés → règle : chaque journée commence par finir la veille. Prov B démarre le lundi 07/09.</div>';
+      '<div style="font-size:11px;color:var(--tx3);margin-top:6px">⚠ = créneaux passés non publiés → règle : chaque journée commence par finir la veille. Depuis le 07/10, toute la province (40/jour) est sur le lot A.</div>';
   }
   // ── Tops sur l'HORIZON choisi (vues Supabase) : produits, villes, dimensions, départements — 4 KPI /100 ──
   const bp=_agg(RECS,'produit'),bv=_agg(RECS,'ville'); // fenêtre 14 j locale, utilisée par les recos/décisions plus bas
