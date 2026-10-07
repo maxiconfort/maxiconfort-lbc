@@ -1428,11 +1428,13 @@ function genDescription(r){
     add('Revêtement','cuir PU premium'+(coul?' '+coul:''));
     add('Sommier','à lattes inclus');
     add('Rangement','grand coffre sous le sommier');
-    add('Matelas',avecMat?(dep?'INCLUS — épaisseur 20 cm':'INCLUS — mémoire de forme haute densité'):'non inclus');
+    // 07/10/2026 (décision Borhen) : le pack lit coffre 140x190 est vendu avec un matelas de 15 cm ; les autres packs lit coffre de dépannage avec un 20 cm
+    const coffreCm=/140\s*x\s*190/.test(String(r.dim||''))?15:20;
+    add('Matelas',avecMat?(dep?'INCLUS — épaisseur '+coffreCm+' cm':'INCLUS — mémoire de forme haute densité'):'non inclus');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, emballé');
     ben=['Grand coffre de rangement sous le sommier : un gain de place précieux.','Contour cuir PU premium : finition haut de gamme qui valorise la chambre.','Idéal petits espaces : rangez couettes, oreillers et linge de lit.','Sommier à lattes inclus : bon soutien et ventilation.'];
-    if(avecMat)ben.push(dep?'Livré avec son matelas de 20 cm : literie complète, prête à dormir.':'Livré avec matelas mémoire de forme : literie complète, prête à dormir.');
+    if(avecMat)ben.push(dep?'Livré avec son matelas de '+coffreCm+' cm : literie complète, prête à dormir.':'Livré avec matelas mémoire de forme : literie complète, prête à dormir.');
   }else if(kind==='nico'){
     add('Type','cadre de lit Nico');
     add('Dimensions couchage',dimP);
