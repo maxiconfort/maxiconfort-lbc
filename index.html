@@ -273,6 +273,15 @@ tr:hover td{background:var(--sf2)}
     <button class="btn gh" onclick="doLogout()" title="Déconnexion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
   </div>
 </div>
+<!-- Alerte permanente (décision Borhen 08/10/2026) : visible par tous les rôles, en tête de l'outil. -->
+<div id="alerte-pack299" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 20px;background:#b91c1c;color:#fff;font-family:var(--f)">
+  <div style="flex:1;min-width:240px">
+    <div style="font-size:14px;font-weight:800;letter-spacing:.2px">ALERTE — NE PLUS VENDRE PACK COFFRE 140 + MATELAS 20 CM À 299 €</div>
+    <div style="font-size:13px;font-weight:600;margin-top:2px">Seule offre : PACK COFFRE 140 + MATELAS 15 CM = 349 €</div>
+  </div>
+  <button class="btn" onclick="alertePack299()" style="background:#fff;color:#b91c1c;border-color:#fff">Voir les annonces à 299 € à mettre en pause</button>
+</div>
+<div id="alerte-pack299-liste" style="display:none;padding:12px 20px;border-bottom:2px solid #b91c1c;background:var(--sf)"></div>
 <div class="stbar" id="stbar" style="grid-template-columns:repeat(4,1fr)">
   <div class="si"><div class="sl">Annonces</div><div class="sv" id="st">—</div></div>
   <div class="si"><div class="sl">Validées ON</div><div class="sv sg" id="son">—</div></div>
@@ -737,6 +746,34 @@ function getZoneRecs(all){
   if(ZONE==='pa')return all.filter(r=>r.dept==='PROV'&&r.collab_id==='A');
   if(ZONE==='pb')return all.filter(r=>r.dept==='PROV'&&r.collab_id==='B');
   return all;
+}
+
+// ══════════════════════════════════════════════
+// ALERTE PACK COFFRE 140 À 299 € (décision Borhen 08/10/2026)
+// ══════════════════════════════════════════════
+// Le pack coffre 140x190 + matelas 20 cm à 299 € ne doit plus être vendu. Seule offre : pack coffre 140 + matelas 15 cm = 349 €.
+// La liste des annonces publiées à 299 € n'est chargée QU'AU CLIC (quota Supabase : jamais dans init()/mSync()).
+// L'outil ne met rien en pause lui-même : la pause se fait à la main sur Leboncoin.
+let ALERTE299=[];
+async function alertePack299(){
+  const z=document.getElementById('alerte-pack299-liste');
+  if(z.style.display!=='none'){z.style.display='none';return;}
+  z.style.display='block';z.innerHTML='<div style="font-size:12px;color:var(--tx2)">Chargement de la liste…</div>';
+  try{
+    ALERTE299=await sbGet('lbc_annonces','select=date_pub,ville,dept,produit,prix,lien&dim=eq.140x190&prix=eq.299&statut=eq.'+encodeURIComponent('Validée')+'&produit=ilike.'+encodeURIComponent('*coffre*avec matelas*')+'&order=date_pub.desc,ville.asc&limit=1000');
+  }catch(e){z.innerHTML='<div style="font-size:12px;color:#b91c1c">Liste indisponible pour le moment. Réessayez dans un instant.</div>';return;}
+  const coul=r=>/blanc/i.test(r.produit)?'Blanc':/noir/i.test(r.produit)?'Noir':'—';
+  const nb=c=>ALERTE299.filter(r=>coul(r)===c).length;
+  const num=r=>((r.lien||'').match(/adId=(\d{6,12})/)||[])[1]||'';
+  const lignes=ALERTE299.map(r=>`<tr><td style="padding:3px 10px 3px 0;font-family:var(--m)">${esc(r.date_pub)}</td><td style="padding:3px 10px 3px 0">${coul(r)}</td><td style="padding:3px 10px 3px 0">${esc(r.ville)} (${esc(r.dept)})</td><td style="padding:3px 10px 3px 0;font-family:var(--m)">${esc(r.prix)} €</td><td style="padding:3px 0">${num(r)?`<a href="https://www.leboncoin.fr/compte/pro/mon-activite?adId=${num(r)}" target="_blank" rel="noopener" style="color:var(--ac)">annonce n° ${num(r)}</a>`:'<span style="color:var(--tx3)">à retrouver par ville et date</span>'}</td></tr>`).join('');
+  z.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--tx)">${ALERTE299.length} annonces du pack coffre 140x190 avec matelas publiées à 299 € — Blanc : ${nb('Blanc')} · Noir : ${nb('Noir')}</div>
+  <div style="font-size:12px;color:var(--tx2);margin:4px 0 8px">À faire sur Leboncoin, à la main : mettre en pause (sans supprimer) toute annonce de cette liste encore en ligne. Ne plus proposer ce pack à 299 €.</div>
+  <div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn" onclick="alertePack299Copier()">📋 Copier la liste</button><button class="btn gh" onclick="alertePack299()">Fermer</button></div>
+  <div style="max-height:320px;overflow:auto;border:1px solid var(--bd);border-radius:var(--r);padding:8px 10px"><table style="border-collapse:collapse;font-size:12px;color:var(--tx)"><thead><tr style="text-align:left;color:var(--tx2)"><th style="padding:0 10px 4px 0">Date de publication</th><th style="padding:0 10px 4px 0">Couleur</th><th style="padding:0 10px 4px 0">Ville</th><th style="padding:0 10px 4px 0">Prix</th><th style="padding:0 0 4px 0">Annonce</th></tr></thead><tbody>${lignes}</tbody></table></div>`;
+}
+function alertePack299Copier(){
+  const txt=['Date de publication\tCouleur\tVille\tDépartement\tPrix\tNuméro annonce'].concat(ALERTE299.map(r=>[r.date_pub,/blanc/i.test(r.produit)?'Blanc':'Noir',r.ville,r.dept,r.prix+' €',((r.lien||'').match(/adId=(\d{6,12})/)||[])[1]||''].join('\t'))).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>showToast('📋 Liste copiée',ALERTE299.length+' annonces')).catch(()=>{});
 }
 
 // ══════════════════════════════════════════════
