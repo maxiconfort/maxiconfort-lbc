@@ -755,24 +755,45 @@ function getZoneRecs(all){
 // La liste des annonces publiées à 299 € n'est chargée QU'AU CLIC (quota Supabase : jamais dans init()/mSync()).
 // L'outil ne met rien en pause lui-même : la pause se fait à la main sur Leboncoin.
 let ALERTE299=[];
+// Suivi de la mise en pause manuelle (colonne lbc_annonces.pause299, décision Borhen 08/10/2026 à 23 h 50) :
+// vide = à vérifier ; 'pause' = était en ligne, mise en pause ; 'hors_ligne' = vérifiée, déjà hors ligne ; 'active' = vérifiée, encore en ligne.
+const ALERTE299_ETATS=[['','À vérifier'],['pause','Mise en pause'],['hors_ligne','Déjà hors ligne'],['active','Encore en ligne']];
+function alertePack299Resume(){
+  const n=v=>ALERTE299.filter(r=>(r.pause299||'')===v).length,tot=ALERTE299.length;
+  return `Vérifiées : ${tot-n('')} sur ${tot} · Mises en pause : ${n('pause')} · Déjà hors ligne : ${n('hors_ligne')} · Encore en ligne : ${n('active')} · Reste à traiter : ${n('')+n('active')}`;
+}
 async function alertePack299(){
   const z=document.getElementById('alerte-pack299-liste');
   if(z.style.display!=='none'){z.style.display='none';return;}
   z.style.display='block';z.innerHTML='<div style="font-size:12px;color:var(--tx2)">Chargement de la liste…</div>';
   try{
-    ALERTE299=await sbGet('lbc_annonces','select=date_pub,ville,dept,produit,prix,lien&dim=eq.140x190&prix=eq.299&statut=eq.'+encodeURIComponent('Validée')+'&produit=ilike.'+encodeURIComponent('*coffre*avec matelas*')+'&order=date_pub.desc,ville.asc&limit=1000');
+    ALERTE299=await sbGet('lbc_annonces','select=id,date_pub,ville,dept,produit,prix,lien,pause299&dim=eq.140x190&prix=eq.299&statut=eq.'+encodeURIComponent('Validée')+'&produit=ilike.'+encodeURIComponent('*coffre*avec matelas*')+'&order=date_pub.desc,ville.asc&limit=1000');
   }catch(e){z.innerHTML='<div style="font-size:12px;color:#b91c1c">Liste indisponible pour le moment. Réessayez dans un instant.</div>';return;}
   const coul=r=>/blanc/i.test(r.produit)?'Blanc':/noir/i.test(r.produit)?'Noir':'—';
   const nb=c=>ALERTE299.filter(r=>coul(r)===c).length;
   const num=r=>((r.lien||'').match(/adId=(\d{6,12})/)||[])[1]||'';
-  const lignes=ALERTE299.map(r=>`<tr><td style="padding:3px 10px 3px 0;font-family:var(--m)">${esc(r.date_pub)}</td><td style="padding:3px 10px 3px 0">${coul(r)}</td><td style="padding:3px 10px 3px 0">${esc(r.ville)} (${esc(r.dept)})</td><td style="padding:3px 10px 3px 0;font-family:var(--m)">${esc(r.prix)} €</td><td style="padding:3px 0">${num(r)?`<a href="https://www.leboncoin.fr/compte/pro/mon-activite?adId=${num(r)}" target="_blank" rel="noopener" style="color:var(--ac)">annonce n° ${num(r)}</a>`:'<span style="color:var(--tx3)">à retrouver par ville et date</span>'}</td></tr>`).join('');
+  const choix=(r,i)=>`<select onchange="alertePack299Maj(${i},this.value,this)" style="padding:3px 4px;font-size:12px;font-family:var(--f);border:1px solid var(--bd2);border-radius:6px;background:var(--sf2);color:var(--tx)">${ALERTE299_ETATS.map(([v,t])=>`<option value="${v}"${(r.pause299||'')===v?' selected':''}>${t}</option>`).join('')}</select>`;
+  const lignes=ALERTE299.map((r,i)=>`<tr><td style="padding:3px 10px 3px 0;font-family:var(--m)">${esc(r.date_pub)}</td><td style="padding:3px 10px 3px 0">${coul(r)}</td><td style="padding:3px 10px 3px 0">${esc(r.ville)} (${esc(r.dept)})</td><td style="padding:3px 10px 3px 0;font-family:var(--m)">${esc(r.prix)} €</td><td style="padding:3px 10px 3px 0">${num(r)?`<a href="https://www.leboncoin.fr/compte/pro/mon-activite?adId=${num(r)}" target="_blank" rel="noopener" style="color:var(--ac)">annonce n° ${num(r)}</a>`:'<span style="color:var(--tx3)">à retrouver par ville et date</span>'}</td><td style="padding:3px 0">${choix(r,i)}</td></tr>`).join('');
   z.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--tx)">${ALERTE299.length} annonces du pack coffre 140x190 avec matelas publiées à 299 € — Blanc : ${nb('Blanc')} · Noir : ${nb('Noir')}</div>
-  <div style="font-size:12px;color:var(--tx2);margin:4px 0 8px">À faire sur Leboncoin, à la main : mettre en pause (sans supprimer) toute annonce de cette liste encore en ligne. Ne plus proposer ce pack à 299 €.</div>
+  <div style="font-size:12px;color:var(--tx2);margin:4px 0 6px">À faire sur Leboncoin, à la main : mettre en pause (sans supprimer) toute annonce de cette liste encore en ligne. Ne plus proposer ce pack à 299 €. Puis noter ici, ligne par ligne, ce que vous avez constaté.</div>
+  <div id="alerte-pack299-resume" style="font-size:12px;font-weight:700;color:var(--tx);margin:0 0 8px">${alertePack299Resume()}</div>
   <div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn" onclick="alertePack299Copier()">📋 Copier la liste</button><button class="btn gh" onclick="alertePack299()">Fermer</button></div>
-  <div style="max-height:320px;overflow:auto;border:1px solid var(--bd);border-radius:var(--r);padding:8px 10px"><table style="border-collapse:collapse;font-size:12px;color:var(--tx)"><thead><tr style="text-align:left;color:var(--tx2)"><th style="padding:0 10px 4px 0">Date de publication</th><th style="padding:0 10px 4px 0">Couleur</th><th style="padding:0 10px 4px 0">Ville</th><th style="padding:0 10px 4px 0">Prix</th><th style="padding:0 0 4px 0">Annonce</th></tr></thead><tbody>${lignes}</tbody></table></div>`;
+  <div style="max-height:320px;overflow:auto;border:1px solid var(--bd);border-radius:var(--r);padding:8px 10px"><table style="border-collapse:collapse;font-size:12px;color:var(--tx)"><thead><tr style="text-align:left;color:var(--tx2)"><th style="padding:0 10px 4px 0">Date de publication</th><th style="padding:0 10px 4px 0">Couleur</th><th style="padding:0 10px 4px 0">Ville</th><th style="padding:0 10px 4px 0">Prix</th><th style="padding:0 10px 4px 0">Annonce</th><th style="padding:0 0 4px 0">Constat sur Leboncoin</th></tr></thead><tbody>${lignes}</tbody></table></div>`;
+}
+// Enregistre le constat d'une ligne (une seule colonne modifiée). En cas d'échec, la ligne revient à sa valeur d'avant.
+async function alertePack299Maj(i,v,sel){
+  const r=ALERTE299[i];if(!r)return;
+  if(!ALERTE299_ETATS.some(e=>e[0]===v)){sel.value=r.pause299||'';return;}
+  const avant=r.pause299||'';
+  // updated_at est avancé pour que les autres appareils reprennent le constat à leur prochaine synchronisation ;
+  // la copie en mémoire (RECS, annonces récentes) est alignée pour qu'un réenregistrement ne l'efface pas.
+  try{await sbPatch('lbc_annonces',r.id,{pause299:v||null,updated_at:new Date().toISOString()});r.pause299=v||null;const x=(typeof RECS!=='undefined'&&RECS||[]).find(a=>a.id===r.id);if(x)x.pause299=v||null;}
+  catch(e){sel.value=avant;showToast('⚠️ Constat non enregistré','Réessayez dans un instant');return;}
+  const z=document.getElementById('alerte-pack299-resume');if(z)z.textContent=alertePack299Resume();
 }
 function alertePack299Copier(){
-  const txt=['Date de publication\tCouleur\tVille\tDépartement\tPrix\tNuméro annonce'].concat(ALERTE299.map(r=>[r.date_pub,/blanc/i.test(r.produit)?'Blanc':'Noir',r.ville,r.dept,r.prix+' €',((r.lien||'').match(/adId=(\d{6,12})/)||[])[1]||''].join('\t'))).join('\n');
+  const lib=v=>(ALERTE299_ETATS.find(e=>e[0]===(v||''))||['',''])[1];
+  const txt=['Date de publication\tCouleur\tVille\tDépartement\tPrix\tNuméro annonce\tConstat'].concat(ALERTE299.map(r=>[r.date_pub,/blanc/i.test(r.produit)?'Blanc':'Noir',r.ville,r.dept,r.prix+' €',((r.lien||'').match(/adId=(\d{6,12})/)||[])[1]||'',lib(r.pause299)].join('\t'))).join('\n');
   navigator.clipboard.writeText(txt).then(()=>showToast('📋 Liste copiée',ALERTE299.length+' annonces')).catch(()=>{});
 }
 
