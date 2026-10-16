@@ -1710,6 +1710,8 @@ let GF_VILLES=null;
 function gfVilleProvince(n){
   if(!Array.isArray(VILLES_DB)||!VILLES_DB.length)return false;
   if(!GF_VILLES)GF_VILLES=VILLES_DB.filter(v=>v&&v.ville).map(v=>({k:String(v.ville).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(),prov:!GF_IDF_DEPTS.test(String(v.dept||''))})).sort((a,b)=>b.k.length-a.k.length);
+  // « Sommier (bois) à lattes » : Lattes est aussi une commune de l'Hérault (seule collision avec le vocabulaire produit, vérifié le 16/10)
+  n=n.replace(/\b(sommier|bois)( bois)? a lattes\b/g,' ');
   const hit=GF_VILLES.find(v=>v.k.length>2&&new RegExp('(^|[^a-z])'+v.k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z]|$)').test(n));
   return hit?hit.prov:false;
 }

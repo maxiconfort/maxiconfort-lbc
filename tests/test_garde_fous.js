@@ -136,6 +136,10 @@ console.log('— Exception direction et journal');
   t('patchPrix : sous le plancher sans justification → inchangé',R('RECS[0].prix')==='189');
   await R('patchPrix("A1",189)');
   t('patchPrix : prix de la grille accepté',R('RECS[0].prix')==='189');
+  // « Sommier bois à lattes » ne doit pas être pris pour la commune de Lattes (34)
+  R('VILLES_DB.push({ville:"Lattes",dept:"34"});GF_VILLES=null;');
+  t('« Sommier Bois à Lattes » reste IDF (pas la commune de Lattes)',R('gfCle("À saisir Sommier Bois à Lattes 90x190 avec Contour Cuir PU prix direct").prov')===false);
+  t('une annonce située à Lattes reste province',R('gfCle("Matelas 140x190 15cm neuf Lattes").prov')===true);
   // description : aucun montant figé (sinon elle contredit le prix dès qu'on corrige l'annonce)
   const desc=R('genDescription({produit:"Ensemble 140x190 - Matelas Mémoire de Forme 15cm + Sommier à Lattes",dim:"140x190",prix:189,ville:"Paris 10e",zone:"IDF",date:"2026-10-16"})');
   t('description générée sans montant en euros',typeof desc==='string'&&desc.length>100&&!/\d\s?€/.test(desc));
