@@ -136,6 +136,9 @@ console.log('— Exception direction et journal');
   t('patchPrix : sous le plancher sans justification → inchangé',R('RECS[0].prix')==='189');
   await R('patchPrix("A1",189)');
   t('patchPrix : prix de la grille accepté',R('RECS[0].prix')==='189');
+  // description : aucun montant figé (sinon elle contredit le prix dès qu'on corrige l'annonce)
+  const desc=R('genDescription({produit:"Ensemble 140x190 - Matelas Mémoire de Forme 15cm + Sommier à Lattes",dim:"140x190",prix:189,ville:"Paris 10e",zone:"IDF",date:"2026-10-16"})');
+  t('description générée sans montant en euros',typeof desc==='string'&&desc.length>100&&!/\d\s?€/.test(desc));
   console.log('\nRésultat : '+ok+' OK / '+ko+' KO');
   process.exit(ko?1:0);
 })();

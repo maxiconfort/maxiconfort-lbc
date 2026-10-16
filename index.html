@@ -1586,7 +1586,8 @@ function genDescription(r){
     ...B,'',
     b1,b2,'',
     _pick(rng,liv),'',
-    `Prix : ${r.prix} € — prix direct, sans intermédiaire.`,'',
+    // Pas de montant dans la description : le prix de l'annonce fait foi (audit 16/10 : descriptions à 279/329/349 € sur des annonces à 189/299/329 €)
+    'Prix direct entrepôt, sans intermédiaire.','',
     '✅ Garantie légale 2 ans  ·  ✅ 14 jours pour changer d\'avis  ·  vendeur professionnel Maxiconfort',
     '',
     _pick(rng,cta),'',
