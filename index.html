@@ -476,7 +476,7 @@ tr:hover td{background:var(--sf2)}
         <span id="pa-sum" style="font-size:11px;font-family:var(--m);color:var(--tx3)"></span>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)">
-        <div class="fgr"><label class="fl" title="Prix d'achat HT en % du prix de vente TTC (ex. Borhen : 35 € HT pour 99 € TTC)">💶 Achat (% du PV TTC)</label><input class="fi" id="pr-ratio" type="number" min="5" max="90" style="width:90px"></div>
+        <div class="fgr"><label class="fl" title="Prix d'achat HT en % du prix de vente TTC">💶 Achat (% du PV TTC)</label><input class="fi" id="pr-ratio" type="number" min="5" max="90" style="width:90px"></div>
         <div class="fgr"><label class="fl">🚚 Livraison (€)</label><input class="fi" id="pr-liv" type="number" min="0" max="200" style="width:90px"></div>
         <button class="btn p" onclick="saveRenta()">Enregistrer le ratio</button>
       </div>
@@ -2078,7 +2078,7 @@ function clearAnnForm(){['av','adpt','adim','aprix','atitre','alib','anote'].for
 // ══════════════════════════════════════════════
 // RENTABILITÉ
 // ══════════════════════════════════════════════
-const RENTA_DATA=[{e:"Ens. 90x190-15cm",r:"MPP1590190",s:"SF952B-90190",pm:33.53,ps:29.94,pv:159,l:35,mg:25.7,c:2.09},{e:"Ens. 90x190-20cm",r:"MPP2090190",s:"SF952B-90190",pm:40.64,ps:29.94,pv:179,l:35,mg:29.2,c:2.11},{e:"Ens. 90x200-15cm",r:"MPP1590200",s:"SF952B-90200",pm:34.74,ps:31.12,pv:169,l:35,mg:28.4,c:2.14},{e:"Ens. 90x200-20cm",r:"MPP2090200",s:"SF952B-90200",pm:41.74,ps:31.12,pv:179,l:35,mg:27.7,c:2.05},{e:"Ens. 120x190",r:"MPP20120190",s:"SF952B-120190",pm:52.75,ps:34.22,pv:229,l:35,mg:36.1,c:2.19},{e:"Ens. 140x190-15cm",r:"MPP15140190",s:"SF952B-140190",pm:49.86,ps:36.83,pv:209,l:35,mg:30.1,c:2.01},{e:"Ens. 140x190-20cm",r:"MPP20140190",s:"SF952B-140190",pm:60.91,ps:36.83,pv:229,l:35,mg:30.4,c:1.95},{e:"Ens. 140x200",r:"MPP20140200",s:"SF952B-140200",pm:62.54,ps:38.07,pv:249,l:35,mg:34.6,c:2.06},{e:"Ens. 160x200",r:"MPP20160200",s:"SF952B-160200",pm:70.85,ps:41.55,pv:259,l:35,mg:31.7,c:1.92},{e:"Ens. 180x200",r:"MPP20180200",s:"SF952B-180200",pm:79.15,ps:50.70,pv:319,l:35,mg:38.0,c:2.05}];
+const RENTA_DATA=[]; // 17/10/2026 : coûts d'achat et marges retirés du code public (confidentialité). Ils sont conservés dans le dépôt privé.
 function renderRenta(){
   const R=rentaParams();
   const b2=document.getElementById('rbody2');
@@ -2556,16 +2556,16 @@ try{const t=localStorage.getItem('mc_theme');if(t)document.documentElement.setAt
 // CATALOGUE BASE — PRIX OFFICIELS
 // ══════════════════════════════════════════════
 const BASE_PRODUCTS=[
-{nom:"Ensemble mat.+som. 90x190-15cm",dim:"90x190 - 15 cm",prix:159,marge:25.7,ref:"MPP1590190",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
-{nom:"Ensemble mat.+som. 90x190-20cm",dim:"90x190 - 20 cm",prix:179,marge:29.2,ref:"MPP2090190",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
-{nom:"Ensemble mat.+som. 90x200-15cm",dim:"90x200 - 15 cm",prix:169,marge:28.4,ref:"MPP1590200",cat:"Ensemble matelas + sommier",priorite:"Haute"},
-{nom:"Ensemble mat.+som. 90x200-20cm",dim:"90x200 - 20 cm",prix:179,marge:27.7,ref:"MPP2090200",cat:"Ensemble matelas + sommier",priorite:"Haute"},
-{nom:"Ensemble mat.+som. 120x190",dim:"120x190",prix:229,marge:36.1,ref:"MPP20120190",cat:"Ensemble matelas + sommier",priorite:"Haute"},
-{nom:"Ensemble mat.+som. 140x190-15cm",dim:"140x190 - 15 cm",prix:209,marge:30.1,ref:"MPP15140190",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
-{nom:"Ensemble mat.+som. 140x190-20cm",dim:"140x190 - 20 cm",prix:229,marge:30.4,ref:"MPP20140190",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
-{nom:"Ensemble mat.+som. 140x200",dim:"140x200",prix:249,marge:34.6,ref:"MPP20140200",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
-{nom:"Ensemble mat.+som. 160x200",dim:"160x200",prix:259,marge:31.7,ref:"MPP20160200",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
-{nom:"Ensemble mat.+som. 180x200",dim:"180x200",prix:319,marge:38.0,ref:"MPP20180200",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
+{nom:"Ensemble mat.+som. 90x190-15cm",dim:"90x190 - 15 cm",prix:159,marge:null,ref:"MPP1590190",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
+{nom:"Ensemble mat.+som. 90x190-20cm",dim:"90x190 - 20 cm",prix:179,marge:null,ref:"MPP2090190",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
+{nom:"Ensemble mat.+som. 90x200-15cm",dim:"90x200 - 15 cm",prix:169,marge:null,ref:"MPP1590200",cat:"Ensemble matelas + sommier",priorite:"Haute"},
+{nom:"Ensemble mat.+som. 90x200-20cm",dim:"90x200 - 20 cm",prix:179,marge:null,ref:"MPP2090200",cat:"Ensemble matelas + sommier",priorite:"Haute"},
+{nom:"Ensemble mat.+som. 120x190",dim:"120x190",prix:229,marge:null,ref:"MPP20120190",cat:"Ensemble matelas + sommier",priorite:"Haute"},
+{nom:"Ensemble mat.+som. 140x190-15cm",dim:"140x190 - 15 cm",prix:209,marge:null,ref:"MPP15140190",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
+{nom:"Ensemble mat.+som. 140x190-20cm",dim:"140x190 - 20 cm",prix:229,marge:null,ref:"MPP20140190",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
+{nom:"Ensemble mat.+som. 140x200",dim:"140x200",prix:249,marge:null,ref:"MPP20140200",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
+{nom:"Ensemble mat.+som. 160x200",dim:"160x200",prix:259,marge:null,ref:"MPP20160200",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
+{nom:"Ensemble mat.+som. 180x200",dim:"180x200",prix:319,marge:null,ref:"MPP20180200",cat:"Ensemble matelas + sommier",priorite:"Très haute"},
 {nom:"Matelas Dodo Confort 15cm",dim:"90x190",prix:89,marge:null,ref:"DODO-9019-15",cat:"Matelas seul",priorite:"Haute"},
 {nom:"Matelas Memoire Forme 20cm Ferme",dim:"90x190",prix:99,marge:null,ref:"MAT-9019-20",cat:"Matelas seul",priorite:"Haute"},
 {nom:"Matelas Dodo Confort 15cm",dim:"90x200",prix:89,marge:null,ref:"DODO-9020-15",cat:"Matelas seul",priorite:"Haute"},

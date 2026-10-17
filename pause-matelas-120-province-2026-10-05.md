@@ -17,8 +17,8 @@ Les annonces « Province » en 120x190 déjà en ligne n'ont pas été mises en 
 (même méthode que pour les lits coffres, fonction officielle « Mettre en pause », aucune suppression).
 
 ## Prix Leboncoin à revoir (calcul du 05/10, coûts du fournisseur proche, livraison maison 25 €)
-- Ensemble 120x190 à 209 € : marge 15,83 € (9,1 % du hors taxes) → prix minimum 219 €, prix conseillé 239 €.
-- Matelas 120x190 à 149 € : marge 15,83 € (12,8 %) → prix minimum 149 €, prix conseillé 169 €.
+- Ensemble 120x190 à 209 € : marge confidentielle (dépôt privé) → prix minimum 219 €, prix conseillé 239 €.
+- Matelas 120x190 à 149 € : marge confidentielle (dépôt privé) → prix minimum 149 €, prix conseillé 169 €.
 Feu vert de Borhen le 05/10/2026 : prix appliqués dans l'outil vers 16 h 05 — P1788428698121 (ensemble 120x190) 209 → 239 €, P1788428698126 (matelas 120x190) 149 → 169 € ; les 17 annonces planifiées « À publier » de l'ensemble passées à 239 €. Les annonces déjà « Validée » et les annonces déjà en ligne sur Leboncoin ne sont pas modifiées (elles affichent encore 209 €).
 
 À voir avec Borhen : les titres des annonces citent « Matelas Dodo Confort Mémoire de Forme 20cm » ; ils devront suivre les caractéristiques réelles du matelas de dépannage.
