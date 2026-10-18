@@ -282,6 +282,12 @@ tr:hover td{background:var(--sf2)}
   <button class="btn" onclick="alertePack299()" style="background:#fff;color:#b91c1c;border-color:#fff">Voir les annonces à 299 € à mettre en pause</button>
 </div>
 <div id="alerte-pack299-liste" style="display:none;padding:12px 20px;border-bottom:2px solid #b91c1c;background:var(--sf)"></div>
+<!-- Contrôle des prix (direction) : annonces en ligne dont le prix diffère de la grille. -->
+<div id="gf-bar" style="display:none;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 20px;background:var(--sf);border-bottom:1px solid var(--bd)">
+  <div style="flex:1;min-width:240px;font-size:13px;font-weight:700">💶 Contrôle des prix — annonces en ligne aux anciens prix</div>
+  <button class="btn" onclick="controleAnciensPrix()">Voir les annonces à remettre au prix</button>
+</div>
+<div id="gf-prix" style="padding:0 20px;background:var(--sf)"></div>
 <div class="stbar" id="stbar" style="grid-template-columns:repeat(4,1fr)">
   <div class="si"><div class="sl">Annonces</div><div class="sv" id="st">—</div></div>
   <div class="si"><div class="sl">Validées ON</div><div class="sv sg" id="son">—</div></div>
@@ -704,6 +710,7 @@ function applyRole(){
   document.getElementById('btn-addprod').style.display=(isA||isP)?'flex':'none';
   document.getElementById('cpbar').style.display=isA?'flex':'none';
   document.getElementById('ap-mg-g').style.display=isA?'flex':'none';
+  document.getElementById('gf-bar').style.display=isA?'flex':'none';
   // Dates par défaut
   const today=fmtDate(new Date());
   const gwd=document.getElementById('gw-date');
@@ -815,6 +822,7 @@ async function init(){
     // V4 : paramètres moteur + catalogue site maxiconfort.fr (62 variantes, quelques Ko)
     try{const pp=await sbGet('lbc_params','select=*');(pp||[]).forEach(p=>PARAMS[p.id]=p.val);}catch(e){}
     try{const cs=await sbGet('lbc_catalogue_site','select=*&limit=300');if(cs)CATSITE=cs;}catch(e){}
+    try{await gfDetecterColonnes();}catch(e){}
     try{const pa=await sbGet('lbc_perf_agg','select=*');if(pa)PERF_AGG=pa;}catch(e){}
     try{const pv=await sbGet('lbc_perf_ville','select=*');if(pv)PERF_VILLE=pv;}catch(e){}
     try{const pd=await sbGet('lbc_perf_dept','select=*');if(pd)PERF_DEPT=pd;}catch(e){}
@@ -896,6 +904,7 @@ async function mSync(){
     try{const sv=await sbGet('lbc_villes','select=*&limit=500');if(sv&&sv.length>0)VILLES_DB=sv;}catch(e){}
     try{const pp=await sbGet('lbc_params','select=*');(pp||[]).forEach(p=>PARAMS[p.id]=p.val);}catch(e){}
     try{const cs=await sbGet('lbc_catalogue_site','select=*&limit=300');if(cs)CATSITE=cs;}catch(e){}
+    try{await gfDetecterColonnes();}catch(e){}
     try{const pa=await sbGet('lbc_perf_agg','select=*');if(pa)PERF_AGG=pa;}catch(e){}
     try{const pv=await sbGet('lbc_perf_ville','select=*');if(pv)PERF_VILLE=pv;}catch(e){}
     try{const pd=await sbGet('lbc_perf_dept','select=*');if(pd)PERF_DEPT=pd;}catch(e){}
@@ -1160,10 +1169,19 @@ async function pF(id,key,val){
     showToast('⚠ Mauvais lien','Ceci est la page de confirmation. Ouvre l\'annonce publiée (Mes annonces) et copie SON adresse.','am');
   }
   r[key]=val;r.updated_at=new Date().toISOString();saveLocal();
-  try{await sbPatch('lbc_annonces',id,{[key]:val,updated_at:r.updated_at});}catch(e){syncErr(e);}
+  const maj={[key]:val,updated_at:r.updated_at};
+  // Identifiant Leboncoin tiré du lien : rapprochement des relevés par identifiant, plus par titre.
+  if(key==='lien'&&GF.cols.lbcId){const ad=adIdDeLien(val);if(ad){r.lbc_id=ad;maj.lbc_id=ad;}}
+  try{await sbPatch('lbc_annonces',id,maj);}catch(e){syncErr(e);}
 }
 async function patchPrix(id,val){
   const r=RECS.find(x=>x.id===id);if(!r)return;
+  const p=gfProduit(r.produit,r.dim),ctrl=controlePrix(p,val);
+  const ctx={annonce_id:id,produit_id:p?p.id:null,ancien:Number(r.prix),nouveau:Number(val)};
+  if(!ctrl.ok){
+    if(!ctrl.exception){showToast('⛔ Prix refusé',ctrl.motif,'am');if(CUR)renderTable();return;}
+    if(!(await exceptionDirection(ctrl,ctx))){if(CUR)renderTable();return;}
+  }else if(ctx.ancien!==ctx.nouveau)await journalPrix({...ctx,exception:false,motif:'retour au prix de la grille'});
   r.prix=String(val);r.updated_at=new Date().toISOString();saveLocal();
   try{await sbPatch('lbc_annonces',id,{prix:String(val),updated_at:r.updated_at});}catch(e){syncErr(e);}
 }
@@ -1348,16 +1366,21 @@ function prodDepannage(nom,dim){const n=String(nom);return kindOf(n)==='nico'||m
 function matNeutre(name){return kindOf(name)==='matelas'&&!/m[ée]moire|dodo/i.test(String(name));}
 // Confirmé par Borhen le 06/10/2026 : les matelas 140x190 et 160x200 de 20 cm sont livrés ROULÉS (le 120x190 de dépannage est livré à plat : rien n'est dit).
 const MAT_ROULE=/^(140x190|160x200)$/;
+// Audit du 16/10/2026 : un titre doit toujours dire ce qui est vendu — épaisseur du matelas (15 ou 20 cm, sinon
+// confusion de prix), présence ou non du matelas pour les lits, et modèle exact de canapé.
+const _ep=n=>{const m=String(n).match(/\b(15|20)\s?cm\b/i);return m?' '+m[1]+' cm':'';};
+const _compo=n=>/sans\s+matelas/i.test(n)?'sans matelas':/sommier inclus/i.test(n)?'sommier inclus':/avec\s+matelas|\+\s*matelas/i.test(n)?'avec matelas':'';
+const _cozy=n=>{const c=(String(n).match(/\b(marron|beige|gris|noir|blanc)\b/i)||[])[1];return 'Canapé'+(c?' '+c[0].toUpperCase()+c.slice(1).toLowerCase():'')+' 3 places';};
 const TITRES_RECH={
-  ensemble:[(n,d,v)=>`Ensemble Matelas Sommier ${d} Mémoire de Forme ${v}`,(n,d,v)=>`Matelas + Sommier ${d} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Pack Matelas Sommier ${d} Neuf ${v}`,(n,d,v)=>`Ensemble Literie ${d} Matelas + Sommier Neuf ${v}`],
-  matelas:[(n,d,v)=>`Matelas ${d} Mémoire de Forme Neuf ${v}`,(n,d,v)=>`Matelas ${d} Neuf Livraison Rapide ${v}`],
-  ensemble_neutre:[(n,d,v)=>`Matelas + Sommier ${d} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Pack Matelas Sommier ${d} Neuf ${v}`,(n,d,v)=>`Ensemble Literie ${d} Matelas + Sommier Neuf ${v}`],
-  matelas_neutre:[(n,d,v)=>`Matelas ${d} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Matelas ${d} Neuf Sous Emballage ${v}`],
-  coffre:[(n,d,v)=>`Lit Coffre ${d} avec Rangement Neuf ${v}`,(n,d,v)=>`Lit Coffre ${d} Neuf Sommier Inclus ${v}`],
+  ensemble:[(n,d,v)=>`Ensemble Matelas Sommier ${d}${_ep(n)} Mémoire de Forme ${v}`,(n,d,v)=>`Matelas + Sommier ${d}${_ep(n)} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Pack Matelas Sommier ${d}${_ep(n)} Neuf ${v}`,(n,d,v)=>`Ensemble Literie ${d}${_ep(n)} Matelas + Sommier Neuf ${v}`],
+  matelas:[(n,d,v)=>`Matelas ${d}${_ep(n)} Mémoire de Forme Neuf ${v}`,(n,d,v)=>`Matelas ${d}${_ep(n)} Neuf Livraison Rapide ${v}`],
+  ensemble_neutre:[(n,d,v)=>`Matelas + Sommier ${d}${_ep(n)} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Pack Matelas Sommier ${d}${_ep(n)} Neuf ${v}`,(n,d,v)=>`Ensemble Literie ${d}${_ep(n)} Matelas + Sommier Neuf ${v}`],
+  matelas_neutre:[(n,d,v)=>`Matelas ${d}${_ep(n)} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Matelas ${d}${_ep(n)} Neuf Sous Emballage ${v}`],
+  coffre:[(n,d,v)=>`Lit Coffre ${d} ${_compo(n)} avec Rangement Neuf ${v}`,(n,d,v)=>`Lit Coffre ${d} ${_compo(n)} Neuf Sommier Inclus ${v}`],
   sommier:[(n,d,v)=>`Sommier ${d} Bois Massif Neuf ${v}`],
-  nico:[(n,d,v)=>`Lit ${d} Simili Cuir Design Neuf ${v}`],
+  nico:[(n,d,v)=>`Lit Nico ${d} ${_compo(n)} Simili Cuir Design Neuf ${v}`],
   superpose:[(n,d,v)=>`Lit Superposé ${d} Enfant Neuf ${v}`],
-  canape:[(n,d,v)=>`Canapé d'Angle Convertible Réversible Neuf ${v}`]
+  canape:[(n,d,v)=>/angle|convertible/i.test(n)?`Canapé d'Angle Convertible Réversible Neuf ${v}`:`${_cozy(n)} Neuf ${v}`]
 };
 let LAST_TITRE_FAM='';
 function genTitre(nom,dim,ville,isPr,seed){
@@ -1563,7 +1586,8 @@ function genDescription(r){
     ...B,'',
     b1,b2,'',
     _pick(rng,liv),'',
-    `Prix : ${r.prix} € — prix direct, sans intermédiaire.`,'',
+    // Pas de montant dans la description : le prix de l'annonce fait foi (audit 16/10 : descriptions à 279/329/349 € sur des annonces à 189/299/329 €)
+    'Prix direct entrepôt, sans intermédiaire.','',
     '✅ Garantie légale 2 ans  ·  ✅ 14 jours pour changer d\'avis  ·  vendeur professionnel Maxiconfort',
     '',
     _pick(rng,cta),'',
@@ -1581,6 +1605,7 @@ function genDescription(r){
 // jamais publiés en Province (12 produits concernés, constat du 10/09/2026).
 function prodPubliable(p,isPr){
   if(!p||p.actif===false)return false;
+  if(typeof controlePublication==='function'&&controlePublication(p,isPr))return false; // zone IDF seule, rupture de stock
   const z=p.zone_pub||'both';
   if(!(z==='both'||(isPr?z==='prov':z==='idf')))return false;
   if(isPr)return p.cat==='Matelas seul Province'&&/matelas|nico/i.test(p.nom||'')&&!/canap/i.test(p.nom||'')&&p.cat!=='Canapé';
@@ -1589,6 +1614,157 @@ function prodPubliable(p,isPr){
 // 07/10/2026 (décision Borhen) : en province, un lit Nico n'est proposé que dans ces zones de villes (table lbc_villes, colonne zone).
 const NICO_PROV_ZONES=['Lille','Toulouse','Lyon','Marseille','Bordeaux'];
 function prodZoneOK(p,zone,isPr){return !(isPr&&/nico/i.test((p&&p.nom)||''))||NICO_PROV_ZONES.includes(zone);}
+
+// ══════════════════════════════════════════════
+// GARDE-FOUS PRIX (audit national Leboncoin du 16/10/2026)
+// Grille unique = lbc_produits : une fiche IDF et, quand le prix diffère, une fiche « Province ».
+// Colonnes facultatives ajoutées par sql/2026-10-16-garde-fous-prix.sql : lbc_produits.prix_plancher,
+// prix_valide_le, prix_valide_par ; table lbc_prix_log ; lbc_annonces.lbc_id. Tant que la migration
+// n'est pas appliquée, l'outil fonctionne comme avant (détection au démarrage dans GF.cols).
+// ══════════════════════════════════════════════
+const GF={cols:{plancher:false,lbcId:false,log:false}};
+const PRIX_MAX_PLAUSIBLE=2000;
+function gfProduit(nom,dim){return PRODS.find(p=>p.nom===nom&&p.dim===dim)||null;}
+function prixPlancher(p){const v=p&&p.prix_plancher;return v===null||v===undefined||v===''?null:Number(v);}
+// Réservés à l'Île-de-France (décisions Borhen) : matelas et ensembles 120x190, canapés (non expédiables GLS),
+// et toute fiche cochée « IDF » seulement. Les sommiers et lits coffres restent vendables partout.
+function produitIdfSeul(p){
+  if(!p)return false;
+  const t=(p.nom||'')+' '+(p.dim||'');
+  return p.zone_pub==='idf'||/canap/i.test(t)||(/120\s?x\s?190/i.test(t)&&/matelas|ensemble|pack/i.test(t));
+}
+// true = en stock, false = rupture sur le site, null = inconnu (pas de lien site, catalogue non chargé,
+// ou information de plus de 3 jours : une donnée périmée ne doit jamais bloquer une publication).
+const STOCK_FRAIS_MS=3*86400000;
+function stockProduit(p){
+  if(!p||!p.site_handle||!CATSITE.length)return null;
+  const s=CATSITE.find(c=>c.handle===p.site_handle);
+  if(!s)return null;
+  if(!s.updated_at||Date.now()-new Date(s.updated_at).getTime()>STOCK_FRAIS_MS)return null;
+  return s.dispo!==false;
+}
+// ok : conforme à la grille ; exception : possible seulement par la direction avec justification ;
+// sinon refus net (prix impossible).
+function controlePrix(p,prix){
+  const v=Number(prix);
+  if(!(v>0))return {ok:false,exception:false,motif:'prix invalide'};
+  if(v>PRIX_MAX_PLAUSIBLE)return {ok:false,exception:false,motif:`prix de ${v} € invraisemblable (code postal saisi dans le prix ?)`};
+  if(!p)return {ok:false,exception:true,motif:'produit hors catalogue'};
+  const pl=prixPlancher(p);
+  if(pl!=null&&v<pl)return {ok:false,exception:true,motif:`sous le prix plancher (${pl} €)`};
+  const g=Number(p.prix);
+  if(g>0&&v!==g)return {ok:false,exception:true,motif:`différent du prix de la grille (${g} €)`};
+  return {ok:true,exception:false,motif:''};
+}
+// Motif de blocage d'une publication, ou '' si publiable.
+function controlePublication(p,isPr){
+  if(isPr&&produitIdfSeul(p))return 'produit réservé à l\'Île-de-France';
+  if(stockProduit(p)===false)return 'produit en rupture de stock sur le site';
+  return '';
+}
+function adIdDeLien(lien){const m=String(lien||'').match(/(?:adId=|\/)(\d{9,12})(?=\D|$)/);return m?m[1]:null;}
+async function journalPrix(e){
+  const row={id:'PL-'+Date.now()+'-'+Math.floor(Math.random()*1e4),at:new Date().toISOString(),auteur:ROLE||'?',...e};
+  try{const k='lbc_prix_log_local';const a=JSON.parse(localStorage.getItem(k)||'[]');a.push(row);localStorage.setItem(k,JSON.stringify(a.slice(-500)));}catch(_){}
+  if(GF.cols.log){try{await sbUpsert('lbc_prix_log',[row]);}catch(err){syncErr(err);}}
+  return row;
+}
+async function exceptionDirection(ctrl,ctx){
+  if(!isAdmin()){showToast('⛔ Prix bloqué',ctrl.motif+'. Seule la direction peut faire une exception.','am');return false;}
+  const motif=(typeof prompt==='function'?prompt(`⚠ ${ctrl.motif}.\n\nException direction — justification obligatoire :`,''):'')||'';
+  if(motif.trim().length<5){showToast('Exception annulée','Justification obligatoire (5 caractères minimum).','am');return false;}
+  await journalPrix({...ctx,exception:true,motif:motif.trim()});
+  return true;
+}
+async function gfDetecterColonnes(){
+  GF.cols.plancher=PRODS.some(p=>Object.prototype.hasOwnProperty.call(p,'prix_plancher'));
+  if(GF.detecte)return; // les 2 sondages réseau ne sont faits qu'une fois par session (quota)
+  GF.detecte=true;
+  try{await sbGet('lbc_annonces','select=lbc_id&limit=1');GF.cols.lbcId=true;}catch(_){GF.cols.lbcId=false;}
+  try{await sbGet('lbc_prix_log','select=id&limit=1');GF.cols.log=true;}catch(_){GF.cols.log=false;}
+}
+// Clé produit lue dans un texte (titre d'annonce ou nom de fiche) : famille, dimension, épaisseur, composition, zone.
+function gfCle(t,cat){
+  const n=String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const m=n.match(/(\d{2,3})\s?x\s?(\d{3})/);const dim=m?m[1]+'x'+m[2]:'';
+  const ep=(n.match(/\b(15|20)\s?cm\b/)||[])[1]||'';
+  let fam;
+  if(/canap/.test(n))fam=/angle|convertible/.test(n)?'canape-angle':'canape';
+  else if(/superpos|trio/.test(n))fam=/2\s?\+\s?1|trio/.test(n)?'superpose-trio':'superpose';
+  else if(/coffre/.test(n))fam='coffre';
+  else if(/nico|simili cuir/.test(n))fam='nico';
+  else if((/sommier/.test(n)&&/matelas/.test(n))||/ensemble|literie|pack complet|pack matelas/.test(n))fam='ensemble';
+  else if(/sommier/.test(n))fam='sommier';
+  else if(/matelas/.test(n))fam='matelas';
+  else fam='autre';
+  let compo='';
+  if(fam==='coffre'||fam==='nico')compo=/sans matelas|sommier inclus/.test(n)?'sans':/avec matelas|\+ ?matelas/.test(n)?'avec':'?';
+  let prov=/province/.test(n)||cat==='Matelas seul Province'||(fam==='nico'&&/sommier inclus/.test(n));
+  if(!prov&&cat===undefined)prov=gfVilleProvince(n);
+  return {fam,dim,ep,compo,prov};
+}
+// Zone d'une annonce d'après la ville citée dans son titre (table lbc_villes) : beaucoup de titres province
+// ne contiennent pas le mot « Province ». Ville inconnue → Île-de-France (cas majoritaire).
+const GF_IDF_DEPTS=/^(75|77|78|91|92|93|94|95)$/;
+let GF_VILLES=null;
+function gfVilleProvince(n){
+  if(!Array.isArray(VILLES_DB)||!VILLES_DB.length)return false;
+  if(!GF_VILLES)GF_VILLES=VILLES_DB.filter(v=>v&&v.ville).map(v=>({k:String(v.ville).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(),prov:!GF_IDF_DEPTS.test(String(v.dept||''))})).sort((a,b)=>b.k.length-a.k.length);
+  // « Sommier (bois) à lattes » : Lattes est aussi une commune de l'Hérault (seule collision avec le vocabulaire produit, vérifié le 16/10)
+  n=n.replace(/\b(sommier|bois)( bois)? a lattes\b/g,' ');
+  const hit=GF_VILLES.find(v=>v.k.length>2&&new RegExp('(^|[^a-z])'+v.k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z]|$)').test(n));
+  return hit?hit.prov:false;
+}
+// Fiche de la grille correspondant à un titre d'annonce. Plusieurs variantes possibles (épaisseur ou
+// composition absente du titre) : on retient celle dont le prix est le plus proche.
+function gfProduitDeTitre(titre,prix){
+  const c=gfCle(titre);
+  if(!c.dim&&!/canape|superpose/.test(c.fam))return null;
+  const cands=PRODS.filter(p=>p.actif!==false&&Number(p.prix)>0).filter(p=>{
+    const k=gfCle(p.nom+' '+(p.dim||''),p.cat);
+    return k.fam===c.fam&&(k.dim===c.dim||/canape|superpose/.test(c.fam))&&k.prov===c.prov&&(!c.ep||!k.ep||k.ep===c.ep)&&(c.compo==='?'||!c.compo||!k.compo||k.compo===c.compo);
+  });
+  if(!cands.length)return null;
+  return cands.slice().sort((a,b)=>Math.abs(Number(a.prix)-prix)-Math.abs(Number(b.prix)-prix))[0];
+}
+// Compare un relevé d'annonces en ligne (lbc_releves) à la grille. Fonction pure (testée).
+function gfComparerReleve(rows){
+  const out=[];
+  for(const r of rows||[]){
+    const prix=Number(r.prix);const p=gfProduitDeTitre(r.titre,prix);if(!p)continue;
+    const g=Number(p.prix),pl=prixPlancher(p);
+    if(prix!==g)out.push({titre:r.titre,date_pub:r.date_pub,lbc_id:r.lbc_id||'',prix,grille:g,plancher:pl,sousPlancher:pl!=null&&prix<pl,
+      contacts:(Number(r.messages)||0)+(Number(r.appels)||0),produit:p.nom,dim:p.dim});
+  }
+  return out.sort((a,b)=>(b.sousPlancher-a.sousPlancher)||(b.contacts-a.contacts)||Math.abs(b.prix-b.grille)-Math.abs(a.prix-a.grille));
+}
+let GF_ECARTS=[];
+async function controleAnciensPrix(){
+  if(!isAdmin())return;
+  const box=document.getElementById('gf-prix');
+  if(box.dataset.open==='1'){box.dataset.open='0';box.innerHTML='';return;}
+  box.dataset.open='1';box.innerHTML='<div style="padding:10px 0">Chargement du dernier relevé…</div>';
+  try{
+    // Chargé à la demande uniquement (quota Supabase) : jamais dans init()/mSync().
+    const last=await sbGet('lbc_releves','select=date_releve&order=date_releve.desc&limit=1');
+    const d=last&&last[0]&&last[0].date_releve;if(!d){box.innerHTML='<div style="padding:10px 0">Aucun relevé disponible.</div>';return;}
+    let rows=[],page=0;
+    while(true){
+      const b=await sbGet('lbc_releves',`select=titre,prix,date_pub,messages,appels&date_releve=eq.${d}&order=titre.asc&limit=1000&offset=${page*1000}`);
+      rows=rows.concat(b||[]);if(!b||b.length<1000)break;page++;
+    }
+    GF_ECARTS=gfComparerReleve(rows);
+    const parProd={};GF_ECARTS.forEach(e=>{const k=e.produit+' '+e.dim+' → '+e.grille+' €';parProd[k]=(parProd[k]||0)+1;});
+    const resume=Object.entries(parProd).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<li>${n} × ${esc(k)}</li>`).join('');
+    const lignes=GF_ECARTS.slice(0,300).map((e,i)=>`<tr${e.sousPlancher?' style="background:var(--rd2)"':''}><td>${esc(e.titre)}</td><td style="font-family:var(--m)">${e.date_pub||''}</td><td style="font-weight:800;color:var(--rd)">${e.prix} €</td><td style="font-weight:800;color:var(--gn)">${e.grille} €</td><td>${e.sousPlancher?'⚠ sous plancher':''}</td><td>${e.contacts}</td><td><button class="btn gh" onclick="gfCopier(${i})">📋 Titre</button></td></tr>`).join('');
+    box.innerHTML=`<div style="padding:10px 0"><div style="font-weight:800">Relevé du ${d} : ${rows.length} annonces, ${GF_ECARTS.length} à remettre au prix de la grille</div>
+      <ul style="margin:6px 0 10px 18px;font-size:12px">${resume}</ul>
+      <div style="font-size:12px;margin-bottom:6px">Méthode : copier le titre, le rechercher dans « Mon activité » sur Leboncoin, modifier le prix. Les annonces qui ont des contacts d'abord.</div>
+      <div style="max-height:420px;overflow:auto"><table class="tbl"><tr><th>Annonce</th><th>Publiée</th><th>Prix en ligne</th><th>Prix grille</th><th></th><th>Contacts</th><th></th></tr>${lignes}</table></div>
+      <button class="btn gh" style="margin-top:8px" onclick="controleAnciensPrix()">Fermer</button></div>`;
+  }catch(e){box.innerHTML='<div style="padding:10px 0">Erreur : '+esc(e.message||String(e))+'</div>';}
+}
+function gfCopier(i){const e=GF_ECARTS[i];if(!e)return;try{navigator.clipboard.writeText(e.titre);showToast('📋 Titre copié',e.titre.slice(0,60));}catch(_){}}
 function getProdPool(isPr,mode){
   let pool=PRODS.filter(p=>prodPubliable(p,isPr));
   if(!pool.length)pool=PRODS;
@@ -2019,6 +2195,13 @@ function renderCatalogue(){
 }
 async function updProd(id,key,val){
   const p=PRODS.find(x=>x.id===id);if(!p)return;
+  if(key==='prix'){
+    // Changement de grille : jamais sous le plancher sans exception direction, toujours journalisé.
+    const v=Number(val),ancien=Number(p.prix),pl=prixPlancher(p);
+    if(!(v>0)||v>PRIX_MAX_PLAUSIBLE){showToast('⛔ Prix refusé','prix invalide ou invraisemblable','am');renderCatalogue();return;}
+    if(pl!=null&&v<pl){if(!(await exceptionDirection({motif:`sous le prix plancher (${pl} €)`},{produit_id:id,ancien,nouveau:v}))){renderCatalogue();return;}}
+    else if(v!==ancien)await journalPrix({produit_id:id,ancien,nouveau:v,exception:false,motif:'changement de la grille'});
+  }
   p[key]=val;p.updated_at=new Date().toISOString();
   if(key==='actif')renderCatalogue();
   if(key==='prix'){const up=RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim);if(up.length){up.forEach(r=>{r.prix=String(val);r.updated_at=new Date().toISOString();});try{await sbUpsert('lbc_annonces',up);}catch(e){}if(CUR)renderTable();}}
@@ -2066,7 +2249,15 @@ async function addAnnonce(){
   const dim=document.getElementById('adim').value.trim(),heure=document.getElementById('aheure').value,dept=document.getElementById('adpt').value.trim()||(isProv()?'PROV':''),pri=document.getElementById('apri').value;
   let titre=document.getElementById('atitre').value.trim();if(!titre)titre=nom+' '+dim+' - '+v;
   const note=document.getElementById('anote').value.trim(),photo=PHOTOS[Math.floor(Math.random()*PHOTOS.length)],texte=TEXTES[Math.floor(Math.random()*TEXTES.length)];
-  const pr=PRODS.find(x=>x.id===pid)||PRODS.find(x=>x.nom===nom);
+  const pr=PRODS.find(x=>x.id===pid)||PRODS.find(x=>x.nom===nom&&x.dim===dim)||null;
+  // Garde-fous : zone, stock, prix de la grille (exception direction obligatoire pour s'en écarter).
+  const blocage=pr?controlePublication(pr,isProv()):'';
+  if(blocage){showToast('⛔ Publication bloquée',blocage,'am');return;}
+  const ctrl=controlePrix(pr,prix);
+  if(!ctrl.ok){
+    if(!ctrl.exception){showToast('⛔ Prix refusé',ctrl.motif,'am');return;}
+    if(!(await exceptionDirection(ctrl,{produit_id:pr?pr.id:null,ancien:pr?Number(pr.prix):null,nouveau:Number(prix),annonce_id:'(ajout manuel)'})))return;
+  }
   const id='CUSTOM-'+Date.now();
   const nr={id,heure,ville:v,dept,date_pub:ds,produit:nom,dim,prix:String(prix),priorite:pri,titre,photo,texte,ref:pr?.ref||'',collab_id:isProvA()?'A':isProvB()?'B':'',validation:'OFF',statut:'À publier',lien:'',commentaire:note,custom:true,updated_at:new Date().toISOString()};
   RECS.push(nr);saveLocal();updateStats();renderCal();
@@ -2485,9 +2676,16 @@ let CS_IGN=new Set(),CS_PRIX=[];
 function csIgnore(id){CS_IGN.add(id);renderCatSite();}
 async function csAcceptAll(){
   const list=[...CS_PRIX];
-  for(const it of list){const p=PRODS.find(x=>x.id===it.id);if(p){p.prix=it.prix;try{await sbPatch('lbc_produits',it.id,{prix:it.prix,updated_at:new Date().toISOString()});}catch(e){syncErr(e);}}}
+  // Les prix Leboncoin sont volontairement différents de ceux du site : l'alignement en masse demande confirmation,
+  // respecte les prix planchers et chaque changement est journalisé.
+  if(!confirm(`Aligner ${list.length} prix Leboncoin sur ceux du site maxiconfort.fr ?\n\nLes prix Leboncoin sont normalement différents du site (canal « prix direct »).`))return;
+  let n=0,refus=0;
+  for(const it of list){const p=PRODS.find(x=>x.id===it.id);if(!p)continue;
+    const pl=prixPlancher(p);if(pl!=null&&Number(it.prix)<pl){refus++;continue;}
+    await journalPrix({produit_id:p.id,ancien:Number(p.prix),nouveau:Number(it.prix),exception:false,motif:'alignement sur le site (validation admin)'});
+    p.prix=it.prix;n++;try{await sbPatch('lbc_produits',it.id,{prix:it.prix,updated_at:new Date().toISOString()});}catch(e){syncErr(e);}}
   renderCatalogue();renderCatSite();
-  showToast('✓ '+list.length+' prix alignés','sur maxiconfort.fr (validation admin)');
+  showToast('✓ '+n+' prix alignés','sur maxiconfort.fr (validation admin)'+(refus?` — ${refus} refusé(s) : sous le prix plancher`:''));
 }
 function renderCatSite(){
   const el=document.getElementById('dash-catsite');if(!el)return;

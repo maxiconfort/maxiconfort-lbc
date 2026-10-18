@@ -15,7 +15,7 @@ Set-Location (Split-Path $PSScriptRoot -Parent)
 $echecs = 0
 $lignes = @()
 
-foreach ($h in @('test_v46.js', 'test_v47.js')) {
+foreach ($h in @('test_v46.js', 'test_v47.js', 'test_garde_fous.js')) {
   foreach ($d in $Dates) {
     $sortie = node "tests\$h" $d 2>&1
     $res = ($sortie | Select-String -Pattern 'sultat :').ToString()
