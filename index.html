@@ -254,6 +254,7 @@ tr:hover td{background:var(--sf2)}
     </div>
     <label class="ll">Code d'accès (votre rôle)</label>
     <input class="li" id="pin" type="password" maxlength="4" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="off">
+    <label class="ll" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:10px"><input type="checkbox" id="confiance"> Rester connecté sur cet appareil (appareil de confiance)</label>
     <button class="lbtn" id="lbtn" onclick="doLogin()">Accéder →</button>
     <div class="lerr" id="lerr">❌ Code incorrect</div>
     <div style="font-size:11px;color:var(--tx3);margin-top:14px;font-family:var(--m)">Contactez votre administrateur</div>
@@ -638,8 +639,13 @@ async function ensureAuth(){
 function showLErr(msg){const e=document.getElementById('lerr');e.textContent=msg;e.style.display='block';}
 function revealAccFields(){const a=document.getElementById('acc-fields');if(a)a.style.display='block';}
 // Au chargement : si une session existe, n'afficher que le PIN ; sinon demander email + mot de passe.
+/** Appareil de confiance : rôle retenu sur cet appareil (null sinon). */
+function roleConfiance(){try{const c=JSON.parse(localStorage.getItem('mc_confiance')||'null');return c&&Object.values(PINS).includes(c.role)?c.role:null;}catch(e){return null;}}
 function initLogin(){
   loadSession();
+  // Appareil de confiance : session du compte encore valable + rôle retenu → on entre sans code (sinon écran habituel).
+  const rc=roleConfiance();
+  if(rc&&(TOKEN||RTOKEN)){ensureAuth().then(ok=>{if(ok&&!ROLE){ROLE=rc;entrerApp();}}).catch(()=>{});}
   const a=document.getElementById('acc-fields');
   if(TOKEN||RTOKEN){if(a)a.style.display='none';const p=document.getElementById('pin');if(p)p.focus();}
   else{if(a)a.style.display='block';const em=document.getElementById('email');if(em)em.focus();}
@@ -665,6 +671,12 @@ async function doLogin(){
     btn.disabled=false;btn.textContent='Accéder →';
   }
   ROLE=role;
+  // Appareil de confiance (09/11/2026, demande de Borhen) : le rôle est retenu SUR CET APPAREIL seulement, si la case est cochée,
+  // pour que l'outil se rouvre seul après un rechargement (agents Claude dans Chrome). « Déconnexion » l'efface.
+  try{const c=document.getElementById('confiance');if(c&&c.checked)localStorage.setItem('mc_confiance',JSON.stringify({role,le:new Date().toISOString()}));}catch(e){}
+  entrerApp();
+}
+function entrerApp(){
   document.getElementById('lerr').style.display='none';
   // Vider le localStorage pour forcer rechargement depuis Supabase
   try{localStorage.removeItem('mc_recs');}catch(e){}
@@ -676,6 +688,7 @@ async function doLogin(){
 // Déconnexion douce : on garde la session Supabase de l'appareil, on revient à l'écran PIN.
 function doLogout(){
   ROLE=null;
+  try{localStorage.removeItem('mc_confiance');}catch(e){} // « Déconnexion » retire la confiance de cet appareil
   document.getElementById('pin').value='';
   document.getElementById('lerr').style.display='none';
   const a=document.getElementById('acc-fields');if(a)a.style.display=(TOKEN||RTOKEN)?'none':'block';
@@ -1134,13 +1147,29 @@ function renderTable(){
 // ══════════════════════════════════════════════
 // ACTIONS
 // ══════════════════════════════════════════════
+// Fenêtre de confirmation DANS LA PAGE (09/11/2026) : remplace la boîte du navigateur, qui fige Chrome pour les agents Claude
+// (invisible pour eux). Même message, mêmes choix ; Échap = Annuler. Renvoie une promesse true/false.
+function confirmer(msg,oui){
+  return new Promise(res=>{
+    const f=document.createElement('div');f.id='mc-confirmer';f.setAttribute('role','alertdialog');f.setAttribute('aria-modal','true');
+    f.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:99999';
+    const b=document.createElement('div');b.style.cssText='background:var(--bg2,#fff);color:var(--tx,#111);max-width:520px;width:92%;padding:22px;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.4);font-size:14px;line-height:1.5';
+    const t=document.createElement('div');t.style.whiteSpace='pre-wrap';t.textContent=msg;b.appendChild(t);
+    const l=document.createElement('div');l.style.cssText='display:flex;gap:10px;justify-content:flex-end;margin-top:18px';
+    const fin=v=>{document.removeEventListener('keydown',k);f.remove();res(v);};
+    const k=e=>{if(e.key==='Escape')fin(false);};
+    const non=document.createElement('button');non.className='btn';non.id='mc-confirmer-non';non.textContent='Annuler';non.onclick=()=>fin(false);
+    const ok=document.createElement('button');ok.className='btn p';ok.id='mc-confirmer-oui';ok.textContent=oui||'Confirmer';ok.onclick=()=>fin(true);
+    l.appendChild(non);l.appendChild(ok);b.appendChild(l);f.appendChild(b);document.body.appendChild(f);document.addEventListener('keydown',k);non.focus();
+  });
+}
 async function toggleVal(id){
   const r=RECS.find(x=>x.id===id);if(!r)return false;
   // Garde-fou date : marquer « publiée » une annonce d'un AUTRE jour qu'aujourd'hui
   // demande confirmation — évite les clics sur un mauvais jour de planning (passé ou futur).
   if(r.validation!=='ON'&&r.date_pub!==fmtDate(new Date())){
     const dd=new Date(r.date_pub+'T12:00:00');
-    if(!confirm('⚠ ATTENTION : cette annonce est prévue pour '+DAYS_FR[dd.getDay()]+' '+dd.getDate()+' '+MONTHS_FR[dd.getMonth()]+' — ce n\'est PAS le planning d\'aujourd\'hui.\n\nRègle : publier le jour J (et finir la veille s\'il en reste).\n\nMarquer quand même comme publiée ?'))return false;
+    if(!(await confirmer('⚠ ATTENTION : cette annonce est prévue pour '+DAYS_FR[dd.getDay()]+' '+dd.getDate()+' '+MONTHS_FR[dd.getMonth()]+' — ce n\'est PAS le planning d\'aujourd\'hui.\n\nRègle : publier le jour J (et finir la veille s\'il en reste).\n\nMarquer quand même comme publiée ?','Marquer quand même')))return false;
   }
   r.validation=r.validation==='ON'?'OFF':'ON';
   r.statut=r.validation==='ON'?'Validée':'À publier';
@@ -1180,7 +1209,7 @@ async function bulkBlq(){
   try{await sbUpsert('lbc_annonces',RECS.filter(r=>FIDS.includes(r.id)));}catch(e){syncErr(e);}
 }
 async function delAnn(id){
-  if(!confirm('Supprimer cette annonce ?'))return;
+  if(!(await confirmer('Supprimer cette annonce ?','Supprimer')))return;
   RECS=RECS.filter(r=>r.id!==id);saveLocal();renderTable();updateStats();renderCal();
   try{await sbDelete('lbc_annonces',id);}catch(e){syncErr(e);}
 }
@@ -2036,7 +2065,7 @@ function updZonePub(id,zone,checked){
   if(!idf&&!prov){showToast('⚠ Au moins une zone','Pour retirer le produit partout, utilisez ⏸ Pause','am');renderCatalogue();return;}
   updProd(id,'zone_pub',idf&&prov?'both':idf?'idf':'prov');renderCatalogue();
 }
-async function delProd(id){if(!confirm('Supprimer ce produit ?'))return;PRODS=PRODS.filter(p=>p.id!==id);buildProdSelect();renderCatalogue();try{await sbDelete('lbc_produits',id);}catch(e){syncErr(e);}}
+async function delProd(id){if(!(await confirmer('Supprimer ce produit ?','Supprimer')))return;PRODS=PRODS.filter(p=>p.id!==id);buildProdSelect();renderCatalogue();try{await sbDelete('lbc_produits',id);}catch(e){syncErr(e);}}
 function toggleAddProd(){const w=document.getElementById('apwrap'),b=document.getElementById('btn-addprod');const open=w.style.display==='block';w.style.display=open?'none':'block';b.textContent=open?'+ Produit':'✕ Fermer';b.className=open?'btn p':'btn d';}
 async function addProd(){
   const n=document.getElementById('apn').value.trim(),d=document.getElementById('apd').value.trim(),p=parseFloat(document.getElementById('app2').value)||0,m=parseFloat(document.getElementById('apm').value)||null,r=document.getElementById('apr').value.trim(),c=document.getElementById('apc').value;

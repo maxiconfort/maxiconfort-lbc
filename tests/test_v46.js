@@ -125,7 +125,8 @@ T('tops départements présents', () => { if (!/Top départements/.test(get('das
 console.log('— garde-fou date (rappel v4.5.1) —');
 T('toggleVal futur demande confirmation', () => {
   let asked = false;
-  ctx.confirm = () => { asked = true; return false; };
+  // v4.7.1 : la confirmation passe par la fenêtre interne confirmer() (asynchrone), plus par confirm() du navigateur
+  ctx.confirmer = () => { asked = true; return Promise.resolve(false); };
   vm.runInContext('RECS.push({id:"fut1",date_pub:"' + dAgo(-3) + '",produit:"X",dim:"",ville:"V",dept:"75",validation:"OFF",statut:"À publier"});toggleVal("fut1")', ctx);
   if (!asked) throw new Error('confirm non appelé');
   const r = vm.runInContext('RECS.find(x=>x.id==="fut1").validation', ctx);
