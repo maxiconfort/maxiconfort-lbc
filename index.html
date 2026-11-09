@@ -640,12 +640,12 @@ function showLErr(msg){const e=document.getElementById('lerr');e.textContent=msg
 function revealAccFields(){const a=document.getElementById('acc-fields');if(a)a.style.display='block';}
 // Au chargement : si une session existe, n'afficher que le PIN ; sinon demander email + mot de passe.
 /** Appareil de confiance : rôle retenu sur cet appareil (null sinon). */
-function roleConfiance(){try{const c=JSON.parse(localStorage.getItem('mc_confiance')||'null');return c&&Object.values(PINS).includes(c.role)?c.role:null;}catch(e){return null;}}
+function roleConfiance(){try{const c=JSON.parse(localStorage.getItem('mc_confiance')||'null');if(!c||!Object.values(PINS).includes(c.role))return null;const le=Date.parse(c.le);if(!(le>Date.now()-30*864e5)){localStorage.removeItem('mc_confiance');return null;}return c.role;}catch(e){return null;}}
 function initLogin(){
   loadSession();
   // Appareil de confiance : session du compte encore valable + rôle retenu → on entre sans code (sinon écran habituel).
   const rc=roleConfiance();
-  if(rc&&(TOKEN||RTOKEN)){ensureAuth().then(ok=>{if(ok&&!ROLE){ROLE=rc;entrerApp();}}).catch(()=>{});}
+  if(rc&&(TOKEN||RTOKEN)){ensureAuth().then(ok=>{if(ok&&!ROLE){ROLE=rc;entrerApp();}else if(!ok&&!ROLE){revealAccFields();}}).catch(()=>{revealAccFields();});}
   const a=document.getElementById('acc-fields');
   if(TOKEN||RTOKEN){if(a)a.style.display='none';const p=document.getElementById('pin');if(p)p.focus();}
   else{if(a)a.style.display='block';const em=document.getElementById('email');if(em)em.focus();}
@@ -660,20 +660,22 @@ async function doLogin(){
     btn.disabled=true;btn.textContent='Connexion…';
     const ok=await ensureAuth();
     btn.disabled=false;btn.textContent='Accéder →';
+    if(ROLE)return; // déjà entré entre-temps (appareil de confiance)
     if(!ok){clearSession();revealAccFields();showLErr('❌ Session expirée — entrez email et mot de passe');return;}
   }else{
     const email=document.getElementById('email').value.trim();
     const pwd=document.getElementById('pwd').value;
-    if(!email||!pwd){showLErr('❌ Email et mot de passe requis');return;}
+    if(!email||!pwd){revealAccFields();showLErr('❌ Email et mot de passe requis');return;}
     btn.disabled=true;btn.textContent='Connexion…';
     try{await authSignIn(email,pwd);}
     catch(e){showLErr('❌ Email ou mot de passe incorrect');btn.disabled=false;btn.textContent='Accéder →';return;}
     btn.disabled=false;btn.textContent='Accéder →';
   }
+  if(ROLE)return;
   ROLE=role;
   // Appareil de confiance (09/11/2026, demande de Borhen) : le rôle est retenu SUR CET APPAREIL seulement, si la case est cochée,
   // pour que l'outil se rouvre seul après un rechargement (agents Claude dans Chrome). « Déconnexion » l'efface.
-  try{const c=document.getElementById('confiance');if(c&&c.checked)localStorage.setItem('mc_confiance',JSON.stringify({role,le:new Date().toISOString()}));}catch(e){}
+  try{const c=document.getElementById('confiance');if(c&&c.checked)localStorage.setItem('mc_confiance',JSON.stringify({role,le:new Date().toISOString()}));else localStorage.removeItem('mc_confiance');}catch(e){}
   entrerApp();
 }
 function entrerApp(){
@@ -1150,6 +1152,7 @@ function renderTable(){
 // Fenêtre de confirmation DANS LA PAGE (09/11/2026) : remplace la boîte du navigateur, qui fige Chrome pour les agents Claude
 // (invisible pour eux). Même message, mêmes choix ; Échap = Annuler. Renvoie une promesse true/false.
 function confirmer(msg,oui){
+  if(document.getElementById('mc-confirmer'))return Promise.resolve(false); // une seule fenêtre à la fois
   return new Promise(res=>{
     const f=document.createElement('div');f.id='mc-confirmer';f.setAttribute('role','alertdialog');f.setAttribute('aria-modal','true');
     f.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:99999';
@@ -1171,6 +1174,10 @@ async function toggleVal(id){
     const dd=new Date(r.date_pub+'T12:00:00');
     if(!(await confirmer('⚠ ATTENTION : cette annonce est prévue pour '+DAYS_FR[dd.getDay()]+' '+dd.getDate()+' '+MONTHS_FR[dd.getMonth()]+' — ce n\'est PAS le planning d\'aujourd\'hui.\n\nRègle : publier le jour J (et finir la veille s\'il en reste).\n\nMarquer quand même comme publiée ?','Marquer quand même')))return false;
   }
+  return basculerVal(id);
+}
+async function basculerVal(id){
+  const r=RECS.find(x=>x.id===id);if(!r)return false; // relue après la confirmation : la synchro a pu remplacer l'objet
   r.validation=r.validation==='ON'?'OFF':'ON';
   r.statut=r.validation==='ON'?'Validée':'À publier';
   r.updated_at=new Date().toISOString();

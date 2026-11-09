@@ -127,11 +127,19 @@ T('toggleVal futur demande confirmation', () => {
   let asked = false;
   // v4.7.1 : la confirmation passe par la fenêtre interne confirmer() (asynchrone), plus par confirm() du navigateur
   ctx.confirmer = () => { asked = true; return Promise.resolve(false); };
-  vm.runInContext('RECS.push({id:"fut1",date_pub:"' + dAgo(-3) + '",produit:"X",dim:"",ville:"V",dept:"75",validation:"OFF",statut:"À publier"});toggleVal("fut1")', ctx);
+  vm.runInContext('RECS.push({id:"fut1",date_pub:"' + dAgo(-3) + '",produit:"X",dim:"",ville:"V",dept:"75",validation:"OFF",statut:"À publier"});window.__p=toggleVal("fut1")', ctx);
   if (!asked) throw new Error('confirm non appelé');
-  const r = vm.runInContext('RECS.find(x=>x.id==="fut1").validation', ctx);
-  if (r !== 'OFF') throw new Error('validation modifiée malgré annulation');
 });
+const asyncTests = (async () => {
+  try { await vm.runInContext('window.__p', ctx);
+    if (vm.runInContext('RECS.find(x=>x.id==="fut1").validation', ctx) !== 'OFF') throw new Error('validation modifiée malgré annulation');
+    pass++; console.log('  ✓ Annuler → reste OFF');
+  } catch (e) { fail++; console.log('  ✗ Annuler → reste OFF — ' + e.message); }
+  try { ctx.confirmer = () => Promise.resolve(true);
+    await vm.runInContext('toggleVal("fut1")', ctx);
+    if (vm.runInContext('RECS.find(x=>x.id==="fut1").validation', ctx) !== 'ON') throw new Error('non passée ON');
+    pass++; console.log('  ✓ Confirmer → passe ON');
+  } catch (e) { fail++; console.log('  ✗ Confirmer → passe ON — ' + e.message); }
+})();
 
-console.log('\nRésultat : ' + pass + ' OK / ' + fail + ' KO');
-process.exit(fail ? 1 : 0);
+asyncTests.then(() => { console.log('\nRésultat : ' + pass + ' OK / ' + fail + ' KO'); if (fail) process.exitCode = 1; });
