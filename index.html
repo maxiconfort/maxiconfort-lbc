@@ -1363,9 +1363,9 @@ function seedRand(str){str=String(str);let h=1779033703^str.length;for(let i=0;i
 const _pick=(rng,a)=>a[Math.floor(rng()*a.length)];
 // Règles 21/08 : produits NEUFS → aucun vocabulaire d'occasion/liquidation dans les titres.
 const ACCROCHES=['Neuf','Promo','Arrivage','Offre','Bon plan','À saisir','Nouveau','Top affaire','Exclusif','Stock disponible'];
-const BENEFS_IDF=['livraison rapide','livraison offerte','dispo immédiate','stock dispo','direct entrepôt','qualité garantie','prix direct','installation possible'];
+const BENEFS_IDF=['livraison rapide','livraison gratuite','livraison offerte','livraison gratuite rapide','dispo immédiate','stock dispo','direct entrepôt','qualité garantie','prix direct','installation possible'];
 // 07/10/2026 (décision Borhen) : « direct fabricant » retiré des titres tant que la source de chaque référence n'est pas confirmée « stock usine / achat direct fabricant ».
-const BENEFS_PROV=['livraison France entière','livré chez vous','expédition rapide','partout en France','colis suivi','livraison à domicile'];
+const BENEFS_PROV=['livraison gratuite France entière','livraison France entière','livré chez vous','expédition rapide','partout en France','colis suivi','livraison à domicile'];
 const FINS=['à ne pas manquer','pour tout budget','idéal chambre','confort garanti','neuf sous emballage','qualité pro','meilleur rapport qualité-prix','prêt à dormir'];
 // V4 : familles de titres ORIENTÉS RECHERCHE par type de produit — ce que tape vraiment l'acheteur.
 // La famille utilisée est tracée (titre_fam) pour identifier plus tard celles qui convertissent le mieux.
@@ -1462,21 +1462,41 @@ const MAT_LEAD=['Matelas neufs à mémoire de forme, livrés partout en France :
 const MAT_TRUST=['✅ Matelas neufs, garantie 2 ans','✅ Neuf, sous emballage · Livraison France entière'];
 const MAT_END=['Donnez-nous votre taille, on a le matelas qu\'il vous faut !','Besoin d\'une dimension précise ? Écrivez-nous, réponse rapide.','Indiquez-nous votre taille de lit, on s\'occupe du reste 👍','Une autre taille ? Contactez-nous, livraison partout en France.'];
 // 07/10/2026 (décision Borhen) : le bloc commun ne dit plus rien de général sur nos matelas ; les listes CAT_* et MAT_* ci-dessus ne sont plus utilisées.
-const GAMME_NEUTRE='Découvrez également notre gamme de matelas, sommiers, ensembles literie et lits Maxiconfort. Plusieurs dimensions disponibles selon les stocks.';
-function genCatalog(rng,isPr){
+// 15/11/2026 (décision Borhen) : CHAQUE annonce joue sur nos forces — livraison GRATUITE, prix défiant toute concurrence, livraison rapide IDF + France,
+// et RÉCAP COMPLET de la collection avec les prix de la grille. Aucun texte identique : tout est tiré au sort (seed = id de l'annonce).
+// GARDE-FOU : les références 120x190 sont livrées en Île-de-France uniquement (décision du 06/10/2026) → jamais « toute la France » pour elles.
+const GRILLE_RECAP={
+  ens:{'90x190':179,'90x200':189,'120x190':259,'140x190':199,'140x200':289,'160x200':279,'180x200':339},
+  mat:{'90x190':109,'90x200':119,'120x190':179,'140x190':149,'140x200':199,'160x200':209,'180x200':229},
+  som:{'90x190':99,'90x200':109,'120x190':109,'140x190':119,'140x200':129,'160x200':139,'180x200':169}
+};
+const _eur=n=>n+' €';
+function _lineDims(rng,obj,note){return Object.keys(obj).map(k=>k+' '+_eur(obj[k])+(note&&note[k]?' '+note[k]:'')+(k==='120x190'?' (Île-de-France)':''));}
+const RC_HEAD=['TOUTE LA COLLECTION MAXICONFORT, LIVRÉE GRATUITEMENT','NOTRE COLLECTION COMPLÈTE : NEUVE, LIVRÉE GRATUITEMENT','SOMMIERS, MATELAS, ENSEMBLES, LITS : TOUTE LA GAMME MAXICONFORT','BESOIN D\'UN AUTRE FORMAT ? TOUTE NOTRE GAMME EN UN COUP D\'ŒIL','TOUT CE QUE NOUS LIVRONS : LA GAMME MAXICONFORT','🛏️ LA COLLECTION MAXICONFORT, PRIX DIRECTS ET LIVRAISON OFFERTE','NOTRE GAMME NEUVE, À PRIX IMBATTABLES, LIVRAISON OFFERTE'];
+const RC_WEDELIVER=['Nous livrons sommiers, matelas, ensembles matelas + sommier, lits coffre, lits Nico et lits superposés : toute la collection Maxiconfort.','Chez Maxiconfort, on livre aussi les sommiers, les matelas, les ensembles matelas + sommier, les lits coffre, les lits Nico et les superposés.','Sommiers, matelas, ensembles literie, lits coffre, lits Nico, superposés : toute la collection Maxiconfort est livrable.','Vous cherchez un sommier, un matelas, un ensemble matelas + sommier ou un lit coffre ? Toute la collection Maxiconfort est livrée chez vous.','Toute notre collection est livrable : sommiers, matelas, ensembles matelas + sommier, lits coffre, lits Nico et lits superposés.','En plus de cette annonce, nous livrons toute la collection Maxiconfort : sommiers, matelas, ensembles, lits coffre, lits Nico, superposés.'];
+const RC_PRIX=['Prix défiant toute concurrence, directement depuis notre entrepôt.','Des prix imbattables, sans intermédiaire.','Nos prix défient toute concurrence : comparez, vous verrez.','Le meilleur prix, en direct de l\'entrepôt, et la livraison est offerte.','Prix directs entrepôt : difficile de faire moins cher.','Des tarifs serrés, une qualité Maxiconfort, et la livraison gratuite.'];
+const RC_LIV=['Livraison GRATUITE et rapide en Île-de-France, et dans toute la France pour la majeure partie de la gamme (120x190 : Île-de-France).','Livraison offerte, rapide, en Île-de-France comme partout en France (120x190 : Île-de-France uniquement).','Livraison gratuite : rapide sur toute l\'Île-de-France et dans toute la France (sauf 120x190, réservé à l\'Île-de-France).','Nous livrons gratuitement, vite, en Île-de-France et dans toute la France (le 120x190 est livré en Île-de-France).'];
+const RC_END=['Une autre taille ? Écrivez-nous, on vous répond vite.','Donnez-nous votre taille, on s\'occupe du reste.','Un message suffit pour réserver ou poser vos questions.','Écrivez-nous votre ville et votre taille : on vous organise la livraison.','Besoin d\'un conseil ? Envoyez-nous un message, réponse rapide.'];
+function genCatalog(rng,isPr,r){
   const sep='━━━━━━━━━━━━━━━━━━━━━━';
-  return [sep,GAMME_NEUTRE].join('\n');
-  if(isPr){
-    const items=_shuffle(rng,MAT_ITEMS).map(v=>_pick(rng,v));
-    const head=_pick(rng,MAT_HEAD),lead=_pick(rng,MAT_LEAD),trust=_pick(rng,MAT_TRUST),end=_pick(rng,MAT_END);
-    if(rng()<0.5)return [sep,head,lead,...items.map(x=>'• '+x),trust,end].join('\n');
-    return [sep,head,lead+' '+items.join(', ')+'.',trust,end].join('\n');
-  }
-  const items=_shuffle(rng,CAT_ITEMS).map(v=>_pick(rng,v));
-  const head=_pick(rng,CAT_HEAD),lead=_pick(rng,CAT_LEAD),dim=_pick(rng,CAT_DIM),end=_pick(rng,CAT_END);
-  const trust=_pick(rng,['✅ Tout neuf, sous emballage','✅ Neuf · Stock disponible','✅ Articles neufs, dispo immédiate']);
-  if(rng()<0.5)return [sep,head,lead,...items.map(x=>'• '+x),dim+'  ·  '+trust,end].join('\n');
-  return [sep,head,lead+' '+items.join(', ')+'.',dim+'  ·  '+trust,end].join('\n');
+  const fams=[
+    ['Ensembles matelas + sommier',_lineDims(rng,GRILLE_RECAP.ens,{'140x190':'(259 € en 20 cm)'})],
+    ['Matelas',_lineDims(rng,GRILLE_RECAP.mat,{'140x190':'(179 € en 20 cm)'})],
+    ['Sommiers',_lineDims(rng,GRILLE_RECAP.som)],
+    ['Lits coffre',['140x190 269 € seul / 349 € avec matelas','160x200 309 € seul / 399 € avec matelas']],
+    ['Lits Nico',['140x190 189 € seul / 279 € avec matelas','160x200 229 € seul / 299 € avec matelas']],
+    ['Lit superposé',['149 €']]
+  ];
+  const order=_shuffle(rng,fams);
+  const head=_pick(rng,RC_HEAD),we=_pick(rng,RC_WEDELIVER),px=_pick(rng,RC_PRIX),liv=_pick(rng,RC_LIV),end=_pick(rng,RC_END);
+  const style=Math.floor(rng()*3);
+  let body;
+  if(style===0)body=order.map(f=>'• '+f[0]+' : '+f[1].join(' · ')).join('\n');
+  else if(style===1)body=order.map(f=>f[0]+' — '+f[1].join(', ')).join('\n');
+  else body=order.map(f=>'▸ '+f[0]+'\n   '+f[1].join('  |  ')).join('\n');
+  const out=[sep,head,we,'(Prix TTC en euros)',body,px,liv,end];
+  if(rng()<0.5){out.splice(2,2,we+' (prix TTC en euros)');}
+  return out.join('\n');
 }
 function genDescription(r){
   const rng=seedRand(r.id||(r.produit+r.ville));
@@ -1590,9 +1610,12 @@ function genDescription(r){
   }
   const dejaDim=(matNeutre(name)||(kind==='ensemble'&&dep))&&name.includes(String(r.dim||'\u0000')); // nom déjà porteur de la dimension : on ne la répète pas
   const intro=dejaDim?[`${name} — neuf, sous emballage.`,`${name}. Neuf, jamais servi.`,`Découvrez notre ${name}, qualité Maxiconfort.`,`${name} disponible immédiatement.`]:[`${name} ${r.dim} — neuf, sous emballage.`,`${name}, ${r.dim}. Neuf, jamais servi.`,`Découvrez notre ${name} ${r.dim}, qualité Maxiconfort.`,`${name} ${r.dim} disponible immédiatement.`];
+  const idfSeul=(/120\s*x\s*190/.test(String(r.dim||''))); // 120x190 : Île-de-France uniquement
   const liv=isPr
-    ?[`Livraison dans toute la France — ${r.ville} et alentours.`,`Expédition rapide partout en France, colis suivi.`,`Livré directement chez vous, où que vous soyez en France.`]
-    :[`Livraison rapide sur ${r.ville} et toute l'Île-de-France.`,`Livraison possible sur ${r.ville} et tout le secteur.`,`Dispo pour ${r.ville} et alentours — livraison express IDF.`];
+    ?[`Livraison GRATUITE dans toute la France — ${r.ville} et alentours.`,`Livraison offerte et rapide partout en France, colis suivi.`,`Livré gratuitement chez vous, où que vous soyez en France.`,`Expédition rapide et gratuite dans toute la France.`]
+    :(idfSeul
+      ?[`Livraison GRATUITE et rapide sur ${r.ville} et toute l'Île-de-France.`,`Livraison offerte à ${r.ville} et dans tout le secteur : notre équipe vous livre vite.`,`Dispo pour ${r.ville} et alentours — livraison gratuite et express en Île-de-France.`]
+      :[`Livraison GRATUITE et rapide sur ${r.ville}, toute l'Île-de-France et dans toute la France.`,`Livraison offerte à ${r.ville} et alentours, mais aussi partout en France.`,`Dispo pour ${r.ville} : livraison gratuite et express en Île-de-France, rapide dans toute la France.`]);
   const cta=["Contactez-nous pour toute information ou pour réserver.","Disponible dès maintenant — écrivez-nous.","Réservez le vôtre dès aujourd'hui.","Une question ? Écrivez-nous, réponse rapide."];
   const b1=_pick(rng,ben),b2=_pick(rng,ben.filter(x=>x!==b1));
   return [
@@ -1601,11 +1624,11 @@ function genDescription(r){
     ...B,'',
     b1,b2,'',
     _pick(rng,liv),'',
-    `Prix : ${r.prix} € — prix direct, sans intermédiaire.`,'',
+    _pick(rng,RC_PRIX),'',
     '✅ Garantie légale 2 ans  ·  ✅ 14 jours pour changer d\'avis  ·  vendeur professionnel Maxiconfort',
     '',
     _pick(rng,cta),'',
-    genCatalog(rng,isPr),'',
+    genCatalog(rng,isPr,r),'',
     'Maxiconfort — literie & mobilier neufs.'
   ].join('\n');
 }
