@@ -1392,7 +1392,7 @@ const TITRES_RECH={
   ensemble_neutre:[(n,d,v)=>`Matelas + Sommier ${d} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Pack Matelas Sommier ${d} Neuf ${v}`,(n,d,v)=>`Ensemble Literie ${d} Matelas + Sommier Neuf ${v}`],
   matelas_neutre:[(n,d,v)=>`Matelas ${d} Neuf Livraison Rapide ${v}`,(n,d,v)=>`Matelas ${d} Neuf Sous Emballage ${v}`],
   coffre:[(n,d,v)=>`Lit Coffre ${d} avec Rangement Neuf ${v}`,(n,d,v)=>`Lit Coffre ${d} Neuf Sommier Inclus ${v}`],
-  sommier:[(n,d,v)=>`Sommier ${d} Bois Massif Neuf ${v}`],
+  sommier:[(n,d,v)=>`Sommier ${d} Lattes Multiplis Neuf ${v}`],
   nico:[(n,d,v)=>`Lit ${d} Simili Cuir Design Neuf ${v}`],
   superpose:[(n,d,v)=>`Lit Superposé ${d} Enfant Neuf ${v}`],
   canape:[(n,d,v)=>`Canapé d'Angle Convertible Réversible Neuf ${v}`]
@@ -1419,7 +1419,7 @@ function genTitre(nom,dim,ville,isPr,seed){
   LAST_TITRE_FAM=fams[fi];
   let t=S[fi]().replace(/\s+/g,' ').trim();
   // LBC autorise 200 caractères de titre (vérifié 27/04/2026) — on vise ~120 utiles, lisibles.
-  if(t.length>120){t=t.slice(0,120);const sp=t.lastIndexOf(' ');if(sp>60)t=t.slice(0,sp);}
+  if(t.length>70){t=t.slice(0,70);const sp=t.lastIndexOf(' ');if(sp>40)t=t.slice(0,sp);}
   return t;
 }
 function parseDim(dim){
@@ -1480,11 +1480,11 @@ const RC_END=['Une autre taille ? Écrivez-nous, on vous répond vite.','Donnez-
 function genCatalog(rng,isPr,r){
   const sep='━━━━━━━━━━━━━━━━━━━━━━';
   const fams=[
-    ['Ensembles matelas + sommier',_lineDims(rng,GRILLE_RECAP.ens,{'140x190':'(259 € en 20 cm)'})],
-    ['Matelas',_lineDims(rng,GRILLE_RECAP.mat,{'140x190':'(179 € en 20 cm)'})],
+    ['Ensembles matelas + sommier',_lineDims(rng,GRILLE_RECAP.ens)],
+    ['Matelas',_lineDims(rng,GRILLE_RECAP.mat)],
     ['Sommiers',_lineDims(rng,GRILLE_RECAP.som)],
     ['Lits coffre',['140x190 269 € seul / 349 € avec matelas','160x200 309 € seul / 399 € avec matelas']],
-    ['Lits Nico',['140x190 189 € seul / 279 € avec matelas','160x200 229 € seul / 299 € avec matelas']],
+    ['Lits Nico',['140x190 209 € seul / 279 € avec matelas','160x200 249 € seul / 299 € avec matelas']],
     ['Lit superposé',['149 €']]
   ];
   const order=_shuffle(rng,fams);
@@ -1513,7 +1513,7 @@ function genDescription(r){
   else if(/sommier/.test(ln))kind='sommier';
   else if(/matelas/.test(ln))kind='matelas';
   const ferme=(/ferme|soutien/.test(ln))?'ferme (bon soutien dorsal)':(thick>=20?'ferme avec accueil moelleux':'mémoire de forme, accueil souple');
-  const coul=/noir/.test(ln)?'noir':(/blanc/.test(ln)?'blanc':(/gris/.test(ln)?'gris':(/marron/.test(ln)?'marron':(/beige/.test(ln)?'beige':''))));
+  const coul=r.couleur?String(r.couleur).toLowerCase():/noir/.test(ln)?'noir':(/blanc/.test(ln)?'blanc':(/gris/.test(ln)?'gris':(/marron/.test(ln)?'marron':(/beige/.test(ln)?'beige':''))));
   // Variantes avec/sans matelas (déclinaisons IDF 2026-07) : détectées depuis le nom du produit
   const avecMat=/avec\s+matelas/.test(ln), sansMat=/sans\s+matelas/.test(ln);
   const dimTxt=d.couch.length?d.couch.join(' + '):'',pers=_persons(d.w),dimP=dimTxt+(pers?' ('+pers+')':'');
@@ -1523,21 +1523,22 @@ function genDescription(r){
   if(kind==='ensemble'&&dep){
     add('Type','ensemble matelas + sommier (literie complète)');
     add('Dimensions',dimP);
-    const thickDep=thick||(MAT_ROULE.test((String(r.dim||'').match(/\d{2,3}\s*x\s*\d{3}/)||[''])[0].replace(/\s/g,''))?20:0); // 140x190 et 160x200 de dépannage : 20 cm
+    const px=Number(r.prix)||0,dim190=/140\s*x\s*190/.test(String(r.dim||''));
+    const thickDep=thick||(dim190?((px===259||px===179)?20:15):MAT_ROULE.test((String(r.dim||'').match(/\d{2,3}\s*x\s*\d{3}/)||[''])[0].replace(/\s/g,''))?20:0); // 140x190 et 160x200 de dépannage : 20 cm
     add('Matelas',[/matelas blanc/i.test(name)?'blanc':'',thickDep?'épaisseur '+thickDep+' cm':''].filter(Boolean).join(', '));
-    add('Sommier','bois massif, lattes multiplis haute résistance');
+    add('Sommier','lattes multiplis haute résistance');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, sous emballage');
-    ben=['Literie complète : matelas et sommier livrés ensemble.','Lattes multiplis souples : ventilent le matelas et épousent vos mouvements.','Structure en bois massif robuste, montage simple.'];
+    ben=['Literie complète : matelas et sommier livrés ensemble.','Lattes multiplis souples : ventilent le matelas et épousent vos mouvements.','Structure robuste, montage simple.'];
   }else if(kind==='ensemble'){
     add('Type','ensemble matelas + sommier (literie complète)');
     add('Dimensions',dimP);
     add('Épaisseur matelas',thick?thick+' cm':'');
     add('Matelas','mousse à mémoire de forme haute densité');
-    add('Sommier','bois massif, lattes multiplis haute résistance');
+    add('Sommier','lattes multiplis haute résistance');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, sous emballage');
-    ben=['Mémoire de forme adaptative : la mousse épouse vos courbes et aligne la colonne.','Indépendance de couchage : plus de réveils quand votre partenaire bouge.','Lattes multiplis souples : ventilent le matelas et épousent vos mouvements.','Structure en bois massif robuste, montage simple.'];
+    ben=['Mémoire de forme adaptative : la mousse épouse vos courbes et aligne la colonne.','Indépendance de couchage : plus de réveils quand votre partenaire bouge.','Lattes multiplis souples : ventilent le matelas et épousent vos mouvements.','Structure robuste, montage simple.'];
   }else if(kind==='coffre'){
     add('Type','lit coffre avec rangement intégré');
     add('Dimensions couchage',dimP);
@@ -1582,14 +1583,13 @@ function genDescription(r){
   }else if(kind==='sommier'){
     add('Type','sommier bois à lattes');
     add('Dimensions',dimP);
-    add('Structure','bois massif');
-    add('Lattes','multiplis flexibles haute résistance');
+        add('Lattes','multiplis flexibles haute résistance');
     add('Contour','cuir PU premium');
     add('Pieds','20 cm, livrés avec le sommier');
     add('Compatibilité','tous types de matelas (mémoire, mousse, ressorts, latex)');
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, sous emballage');
-    ben=['Lattes multiplis souples : soutien sur-mesure et ventilation du matelas.','Bois massif renforcé : structure robuste, sans grincement.','Pieds 20 cm : rangement facile sous le lit, allure aérée.','Compatible tous matelas : mémoire de forme, mousse, ressorts, latex.'];
+    ben=['Lattes multiplis souples : soutien sur-mesure et ventilation du matelas.','Structure renforcée : robuste, sans grincement.','Pieds 20 cm : rangement facile sous le lit, allure aérée.','Compatible tous matelas : mémoire de forme, mousse, ressorts, latex.'];
   }else if(matNeutre(name)){
     add('Type','matelas');
     add('Dimensions',dimP);
@@ -1606,7 +1606,7 @@ function genDescription(r){
     add('Fermeté',ferme);
     add('Garantie','2 ans (garantie légale de conformité)');
     add('État','neuf, sous emballage');
-    ben=['Mémoire de forme adaptative : la mousse épouse vos courbes et aligne la colonne.','Indépendance de couchage : plus de réveils quand votre partenaire bouge.','Régulation thermique : limite la chaleur et la transpiration nocturne.','Anti-acariens et hypoallergénique : idéal pour les personnes sensibles.'];
+    ben=['Mémoire de forme adaptative : la mousse épouse vos courbes et aligne la colonne.','Indépendance de couchage : plus de réveils quand votre partenaire bouge.','Régulation thermique : limite la chaleur et la transpiration nocturne.'];
   }
   const dejaDim=(matNeutre(name)||(kind==='ensemble'&&dep))&&name.includes(String(r.dim||'\u0000')); // nom déjà porteur de la dimension : on ne la répète pas
   const intro=dejaDim?[`${name} — neuf, sous emballage.`,`${name}. Neuf, jamais servi.`,`Découvrez notre ${name}, qualité Maxiconfort.`,`${name} disponible immédiatement.`]:[`${name} ${r.dim} — neuf, sous emballage.`,`${name}, ${r.dim}. Neuf, jamais servi.`,`Découvrez notre ${name} ${r.dim}, qualité Maxiconfort.`,`${name} ${r.dim} disponible immédiatement.`];
