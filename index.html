@@ -379,6 +379,7 @@ tr:hover td{background:var(--sf2)}
     </div>
     <div style="display:flex;gap:7px"><button class="btn p" onclick="addProd()">+ Ajouter</button><button class="btn" onclick="clearAP()">Vider</button></div>
   </div></div>
+  <div id="stock-panel"></div>
   <div id="plist"></div>
 </div>
 <div id="panel-generateur" class="panel">
@@ -1681,7 +1682,18 @@ function boostActive(p,ds){return p.boost_pct&&p.boost_until&&p.boost_until>=(ds
 // Poids effectif PAR ZONE = pression admin de la zone × boost éventuel × APPRENTISSAGE ZONE.
 // L'apprentissage utilise d'abord l'historique DE LA ZONE (≥10 pubs), sinon l'historique global (≥10 pubs).
 // Modulation ×0,4 (mauvais) à ×2,5 (excellent). En dessous de 10 pubs : pression admin inchangée.
-function effWeight(p,ds,isPr){
+// ── STOCK INTERNE (consigne Borhen 27/11/2026) : « vendre ce qu'on a ».
+// PARAMS.stock = {actif:bool, maj:ISO, q:{<ref|id>:quantité}} (table lbc_params, id « stock » — aucun changement de schéma).
+// Mode DÉSACTIVÉ par défaut : tant que Borhen n'a pas donné son GO (stock à jour), le moteur est strictement inchangé.
+// Mode actif : produit en stock (qté>0) ×2 ; produit à 0 ou non listé ×0,15 (jamais exclu, il reste dans l'exploration).
+// La priorité Île-de-France existe déjà via la pression IDF et le pool IDF ; le stock se combine à elle, sans la remplacer.
+const STOCK_BOOST=2,STOCK_MALUS=.15;
+function stockParams(){const s=PARAMS.stock||{};return{actif:s.actif===true,maj:s.maj||null,q:s.q||{}};}
+function stockKey(p){return String((p&&(p.ref||p.id))||'');}
+function stockQty(p){const q=stockParams().q[stockKey(p)];return q==null||q===''?null:Math.max(0,parseInt(q)||0);}
+function stockFactor(p){const S=stockParams();if(!S.actif)return 1;return (stockQty(p)||0)>0?STOCK_BOOST:STOCK_MALUS;}
+function effWeight(p,ds,isPr){return Math.max(1,Math.round(effWeightBase(p,ds,isPr)*stockFactor(p)));}
+function effWeightBase(p,ds,isPr){
   let w=isPr===undefined?prodPoids(p):prodPoidsZone(p,isPr);
   if(boostActive(p,ds))w=Math.round(w*(1+p.boost_pct/100));
   // Apprentissage : score global 3 horizons (7/30/90 j) de la zone — jamais sur un échantillon <10.
@@ -2013,7 +2025,7 @@ function renderCatalogue(){
   if(isAdmin()){if(CAT_FILTER==='idf')vp=PRODS.filter(p=>!p.cat.includes('Province'));else if(CAT_FILTER==='prov')vp=PRODS.filter(p=>p.cat.includes('Province')&&/matelas/i.test(p.nom));else vp=PRODS;}
   else if(isProv())vp=PRODS.filter(p=>p.cat.includes('Province')&&/matelas/i.test(p.nom));
   else vp=PRODS.filter(p=>!p.cat.includes('Province'));
-  document.getElementById('plbl').textContent=vp.length+' produits';
+  document.getElementById('plbl').textContent=vp.length+' produits';renderStockPanel();
   const cats=[...new Set(vp.map(p=>p.cat))];
   el.innerHTML=cats.map(cat=>{
     const ps=vp.filter(p=>p.cat===cat);
@@ -2037,6 +2049,7 @@ function renderCatalogue(){
             :`<div style="display:flex;align-items:center;gap:5px;opacity:.5" title="Référence Province : jamais publiée en Île-de-France, sa pression IDF n'est pas utilisée"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:52px">🗼 Pression</span><span style="font-size:9px;font-family:var(--m);font-weight:700;color:var(--tx3)">— HORS GAMME IDF</span></div>`}
             ${prodPubliable(p,true)?`<div style="display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:52px" title="Pression de publication Province 0-100 (stratégie, pas contrainte)">🚚 Pression</span><input class="ci" type="number" value="${prodPoidsZone(p,true)}" min="0" max="100" style="width:55px;font-weight:800;font-size:13px;text-align:right" onchange="updProd('${p.id}','poids_prov',Math.max(0,Math.min(100,parseInt(this.value)||0)));renderCatalogue()"><span style="font-size:9px;font-family:var(--m);font-weight:700">${CLASS_BADGE[prodClass(p,true)]}</span></div>`
             :`<div style="display:flex;align-items:center;gap:5px;opacity:.5" title="La Province ne prend que les matelas : ce produit n'y est jamais publié, sa pression Province n'est pas utilisée"><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:52px">🚚 Pression</span><span style="font-size:9px;font-family:var(--m);font-weight:700;color:var(--tx3)">— HORS GAMME PROVINCE</span></div>`}
+            <div style="display:flex;align-items:center;gap:5px" title="Quantité en stock interne (vide = non renseigné). Utilisée quand le mode stock est actif."><span style="font-size:10px;color:var(--tx3);font-family:var(--m);width:52px">📦 Stock</span><input class="ci" type="number" min="0" value="${stockQty(p)==null?'':stockQty(p)}" placeholder="—" style="width:55px;font-weight:800;font-size:13px;text-align:right;${stockParams().actif&&!(stockQty(p)>0)?'color:var(--rd)':''}" onchange="setStockQty('${p.id}',this.value)">${stockParams().actif?`<span style="font-size:9px;font-family:var(--m);font-weight:700">${(stockQty(p)||0)>0?'✅ ×'+STOCK_BOOST:'⛔ ×'+STOCK_MALUS}</span>`:''}</div>
             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
               <button class="btn" style="font-size:10px;padding:3px 8px;${boostActive(p)?'background:var(--am2);color:var(--am);border-color:rgba(245,158,11,.4)':''}" onclick="openBoost('${p.id}')" title="Augmenter temporairement la part de publications">${boostActive(p)?'🔥 +'+p.boost_pct+'% → '+p.boost_until:'🔥 Booster'}</button>
               <span style="font-size:9px;color:var(--tx3);font-family:var(--m)" title="Publications planifiées sur les 7 derniers jours">${RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim&&r.date_pub>=fmtDate(addDays(new Date(),-7))&&r.date_pub<=fmtDate(new Date())).length} pubs/7j</span>
@@ -2489,6 +2502,11 @@ function renderDecisions(){
     if((a.ventes>0||a.contacts>=3)&&a.pubs<10)lines.push(['ac','🔥 À AUGMENTER : « '+p+' » — '+a.contacts+' contacts / '+a.ventes+' vente(s) en seulement '+a.pubs+' publications ('+sampleLabel(a.pubs)+' — à confirmer avec plus de volume). Monter son poids.']);
     if(a.pubs>=8&&a.contacts===0)lines.push(['am','⚠️ À RÉDUIRE : « '+p+' » — '+a.pubs+' publications, 0 contact ('+sampleLabel(a.pubs)+'). Baisser son poids ou revoir prix/photo/titre.']);
   });
+  if(stockParams().actif){
+    const d7=fmtDate(addDays(new Date(),-7));
+    PRODS.filter(p=>p.actif!==false&&(stockQty(p)||0)>0&&!RECS.some(r=>r.produit===p.nom&&r.dim===p.dim&&r.date_pub>=d7)).slice(0,5).forEach(p=>lines.push(['gn','📦 EN STOCK NON PUBLIÉ (7 j) : « '+p.nom+' '+(p.dim||'')+' » — '+stockQty(p)+' en stock, 0 publication. Le moteur le pousse en priorité (IDF d\'abord).']));
+    PRODS.filter(p=>p.actif!==false&&!(stockQty(p)>0)&&RECS.filter(r=>r.produit===p.nom&&r.dim===p.dim&&r.date_pub>=d7).length>=3).slice(0,5).forEach(p=>lines.push(['am','📦 HORS STOCK MAIS PUBLIÉ : « '+p.nom+' '+(p.dim||'')+' » — stock 0 / non renseigné alors qu\'il est publié. À retirer ou réapprovisionner.']));
+  }
   const jamais=PRODS.filter(p=>p.actif!==false&&!RECS.some(r=>r.produit===p.nom&&r.dim===p.dim)).slice(0,3);
   jamais.forEach(p=>lines.push(['ac','🧪 À TESTER : « '+p.nom+' '+(p.dim||'')+' » — jamais publié dans la fenêtre. L\'exploration (10 %) va le proposer.']));
   // Suggestions moteur sur les villes (JAMAIS de changement automatique — validation admin dans le cockpit)
@@ -2515,6 +2533,46 @@ async function saveAlloc(){
   PARAMS.allocation=val;renderAllocParams();
   showToast('⚙️ Réglages enregistrés','Champions '+val.champion+'% · Forts '+val.fort+'% · Normaux '+val.normal+'% · Explo '+val.explore+'% · Re-test '+val.retest+'%');
   try{await sbUpsert('lbc_params',[{id:'allocation',val,updated_at:new Date().toISOString()}]);}catch(e){syncErr(e);}
+}
+async function saveStock(){
+  const S=PARAMS.stock||{};S.maj=new Date().toISOString();PARAMS.stock=S;
+  try{await sbUpsert('lbc_params',[{id:'stock',val:S,updated_at:S.maj}]);}catch(e){syncErr(e);}
+}
+function setStockQty(id,v){
+  const p=PRODS.find(x=>x.id===id);if(!p)return;
+  const S=PARAMS.stock||{actif:false,q:{}};S.q=S.q||{};const k=stockKey(p);
+  if(v===''||v==null)delete S.q[k];else S.q[k]=Math.max(0,parseInt(v)||0);
+  PARAMS.stock=S;saveStock();renderCatalogue();
+}
+async function toggleStock(on){
+  const S=PARAMS.stock||{q:{}};S.actif=!!on;PARAMS.stock=S;
+  showToast(on?'📦 Mode stock interne ACTIVÉ':'📦 Mode stock interne désactivé',on?'Produits en stock ×'+STOCK_BOOST+' · hors stock ×'+STOCK_MALUS:'Le moteur ignore le stock');
+  await saveStock();renderCatalogue();renderDecisions();
+}
+// Import en bloc : une ligne par produit « REF;quantité » (séparateurs ; , tab = espace). Remplace tout le stock.
+async function importStock(){
+  const t=(document.getElementById('stk-imp')||{}).value||'';const q={};let n=0,bad=[];
+  t.split(/\r?\n/).forEach(l=>{l=l.trim();if(!l)return;const m=l.match(/^(.+?)[\s;,=\t]+(\d+)$/);if(!m){bad.push(l);return;}q[m[1].trim()]=parseInt(m[2]);n++;});
+  if(!n){showToast('⚠ Rien à importer','Format attendu : REF;quantité (une ligne par produit)','am');return;}
+  const known=new Set(PRODS.map(stockKey));const inconnus=Object.keys(q).filter(k=>!known.has(k));
+  if(!(await confirmer('Remplacer tout le stock par '+n+' références ?'+(inconnus.length?' ('+inconnus.length+' réf. inconnues du catalogue : '+inconnus.slice(0,5).join(', ')+')':''),'Remplacer')))return;
+  const S=PARAMS.stock||{actif:false};S.q=q;PARAMS.stock=S;await saveStock();renderCatalogue();renderDecisions();
+  showToast('📦 Stock importé',n+' références'+(bad.length?' · '+bad.length+' ligne(s) ignorée(s)':''));
+}
+function renderStockPanel(){
+  const el=document.getElementById('stock-panel');if(!el)return;
+  if(!isAdmin()){el.innerHTML='';return;}
+  const S=stockParams(),enStock=PRODS.filter(p=>p.actif!==false&&(stockQty(p)||0)>0).length;
+  el.innerHTML=`<div style="margin:10px 20px;padding:11px 14px;border:1px solid ${S.actif?'var(--gn)':'var(--bd)'};border-radius:var(--r);background:var(--sf2);font-size:12px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-weight:800;cursor:pointer"><input type="checkbox" ${S.actif?'checked':''} onchange="toggleStock(this.checked)" style="accent-color:var(--gn)">📦 Mode stock interne — vendre ce qu'on a</label>
+      <span style="font-family:var(--m);color:var(--tx3)">${enStock} produit(s) en stock · ${S.maj?'maj '+new Date(S.maj).toLocaleString('fr-FR'):'stock jamais saisi'}</span>
+    </div>
+    <div style="color:var(--tx3);margin-top:5px;line-height:1.5">Actif : produits en stock ×${STOCK_BOOST}, hors stock ×${STOCK_MALUS} dans le générateur (combiné à la priorité IDF). Désactivé : moteur inchangé.</div>
+    <details style="margin-top:6px"><summary style="cursor:pointer;font-weight:700">Importer / mettre à jour le stock en bloc</summary>
+      <textarea id="stk-imp" class="fi" rows="5" placeholder="MPP15140190;4&#10;REF-002;0" style="width:100%;margin-top:6px;font-family:var(--m)"></textarea>
+      <button class="btn p" style="margin-top:6px" onclick="importStock()">Appliquer (remplace tout le stock)</button>
+    </details></div>`;
 }
 async function saveRenta(){
   const val={achat_ratio:Math.max(.05,Math.min(.9,(parseFloat(document.getElementById('pr-ratio').value)||35)/100)),livraison:Math.max(0,parseFloat(document.getElementById('pr-liv').value)||35)};
