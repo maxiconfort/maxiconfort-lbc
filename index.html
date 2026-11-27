@@ -380,6 +380,7 @@ tr:hover td{background:var(--sf2)}
     <div style="display:flex;gap:7px"><button class="btn p" onclick="addProd()">+ Ajouter</button><button class="btn" onclick="clearAP()">Vider</button></div>
   </div></div>
   <div id="stock-panel"></div>
+  <div id="pubs-panel"></div>
   <div id="plist"></div>
 </div>
 <div id="panel-generateur" class="panel">
@@ -2025,7 +2026,7 @@ function renderCatalogue(){
   if(isAdmin()){if(CAT_FILTER==='idf')vp=PRODS.filter(p=>!p.cat.includes('Province'));else if(CAT_FILTER==='prov')vp=PRODS.filter(p=>p.cat.includes('Province')&&/matelas/i.test(p.nom));else vp=PRODS;}
   else if(isProv())vp=PRODS.filter(p=>p.cat.includes('Province')&&/matelas/i.test(p.nom));
   else vp=PRODS.filter(p=>!p.cat.includes('Province'));
-  document.getElementById('plbl').textContent=vp.length+' produits';renderStockPanel();
+  document.getElementById('plbl').textContent=vp.length+' produits';renderStockPanel();renderPubsPanel();
   const cats=[...new Set(vp.map(p=>p.cat))];
   el.innerHTML=cats.map(cat=>{
     const ps=vp.filter(p=>p.cat===cat);
@@ -2573,6 +2574,76 @@ function renderStockPanel(){
       <textarea id="stk-imp" class="fi" rows="5" placeholder="MPP15140190;4&#10;REF-002;0" style="width:100%;margin-top:6px;font-family:var(--m)"></textarea>
       <button class="btn p" style="margin-top:6px" onclick="importStock()">Appliquer (remplace tout le stock)</button>
     </details></div>`;
+}
+
+// ── COLLECTE DE DATA (consigne Borhen 27/11/2026, feu vert modifs) ──
+// PARAMS.pubs = {maj, rows:[{id,jour,slot,type,taille,prix,ville,dep,bf,vues,fav,msg,appels,vendu}]} (lbc_params, id « pubs » — aucun changement de schéma).
+// Une ligne par annonce publiée (id Leboncoin = clé) ; les résultats (vues/fav/msg/appels/vendu) se mettent à jour par id.
+// Sert à scorer produits / zones / créneaux — lecture seule : ne modifie PAS le moteur tant que Borhen n'a pas donné son GO.
+const IDF_DEPS=['75','77','78','91','92','93','94','95'];
+function pubsRows(){return (PARAMS.pubs&&PARAMS.pubs.rows)||[];}
+async function savePubs(){
+  const S=PARAMS.pubs||{rows:[]};S.maj=new Date().toISOString();PARAMS.pubs=S;
+  try{await sbUpsert('lbc_params',[{id:'pubs',val:S,updated_at:S.maj}]);}catch(e){syncErr(e);}
+}
+// Import publications : id;jour(AAAA-MM-JJ);créneau(8h,11h30…);type;taille;prix;ville;dép;bf(0/1)  — fusionne par id.
+function parsePubsText(t){
+  const rows=[],bad=[];
+  t.split(/\r?\n/).forEach(l=>{l=l.trim();if(!l)return;const c=l.split(/\s*;\s*/);
+    if(c.length<8||!/^\d{8,12}$/.test(c[0])){bad.push(l);return;}
+    rows.push({id:c[0],jour:c[1],slot:c[2],type:c[3],taille:c[4],prix:parseInt(c[5])||0,ville:c[6],dep:String(c[7]).slice(0,2),bf:c[8]==='1'?1:0});});
+  return{rows,bad};
+}
+async function importPubs(){
+  const{rows,bad}=parsePubsText((document.getElementById('pub-imp')||{}).value||'');
+  if(!rows.length){showToast('⚠ Rien à importer','Format : id;jour;créneau;type;taille;prix;ville;dép;bf','am');return;}
+  const S=PARAMS.pubs||{rows:[]};const m=new Map((S.rows||[]).map(r=>[r.id,r]));
+  rows.forEach(r=>m.set(r.id,Object.assign({},m.get(r.id)||{},r)));S.rows=[...m.values()];PARAMS.pubs=S;
+  await savePubs();renderPubsPanel();
+  showToast('📊 Publications enregistrées',rows.length+' ligne(s)'+(bad.length?' · '+bad.length+' ignorée(s)':''));
+}
+// Import résultats : id;vues;favoris;messages;appels;vendu(0/1) — met à jour les annonces connues.
+async function importPubResults(){
+  const t=(document.getElementById('pub-res')||{}).value||'';const S=PARAMS.pubs||{rows:[]};const m=new Map((S.rows||[]).map(r=>[r.id,r]));let n=0,inc=0;
+  t.split(/\r?\n/).forEach(l=>{l=l.trim();if(!l)return;const c=l.split(/\s*;\s*/);const r=m.get(c[0]);if(!r){inc++;return;}
+    r.vues=parseInt(c[1])||0;r.fav=parseInt(c[2])||0;r.msg=parseInt(c[3])||0;r.appels=parseInt(c[4])||0;if(c[5]!==undefined&&c[5]!=='')r.vendu=c[5]==='1'?1:0;n++;});
+  if(!n){showToast('⚠ Aucun résultat appliqué','Format : id;vues;favoris;messages;appels;vendu','am');return;}
+  S.rows=[...m.values()];PARAMS.pubs=S;await savePubs();renderPubsPanel();
+  showToast('📊 Résultats mis à jour',n+' annonce(s)'+(inc?' · '+inc+' id inconnu(s)':''));
+}
+// Agrégats : par clé (type / département / zone / créneau) → pubs, vues, messages, favoris, ventes, messages pour 100 vues.
+function pubsAgg(rows,keyFn){
+  const g={};rows.forEach(r=>{const k=keyFn(r);if(!k)return;const a=g[k]||(g[k]={k,n:0,mesure:0,vues:0,msg:0,fav:0,vendu:0});
+    a.n++;if(r.vues!=null){a.mesure++;a.vues+=r.vues||0;a.msg+=r.msg||0;a.fav+=r.fav||0;}a.vendu+=r.vendu?1:0;});
+  return Object.values(g).map(a=>Object.assign(a,{msgPer100:a.vues?Math.round(a.msg*1000/a.vues)/10:null})).sort((x,y)=>(y.msg-x.msg)||(y.n-x.n));
+}
+function pubsStats(){
+  const R=pubsRows();
+  return{total:R.length,mesurees:R.filter(r=>r.vues!=null).length,
+    parType:pubsAgg(R,r=>r.type),parDep:pubsAgg(R,r=>r.dep),
+    parZone:pubsAgg(R,r=>IDF_DEPS.includes(r.dep)?'IDF':'Province'),parSlot:pubsAgg(R,r=>r.slot),
+    parBf:pubsAgg(R,r=>r.bf?'Avec vignette BF':'Sans vignette BF')};
+}
+function pubsExportCSV(){
+  const H=['id','jour','slot','type','taille','prix','ville','dep','bf','vues','fav','msg','appels','vendu'];
+  const csv=[H.join(';')].concat(pubsRows().map(r=>H.map(h=>r[h]==null?'':r[h]).join(';'))).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));a.download='publications-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+function renderPubsPanel(){
+  const el=document.getElementById('pubs-panel');if(!el)return;
+  if(!isAdmin()){el.innerHTML='';return;}
+  const st=pubsStats();
+  const tbl=(titre,arr)=>arr.length?`<div style="min-width:180px"><div style="font-weight:800;margin-bottom:3px">${titre}</div>${arr.slice(0,8).map(a=>`<div style="font-family:var(--m);color:var(--tx2)">${a.k} · ${a.n} pub${a.mesure?' · '+a.msg+' msg / '+a.vues+' vues'+(a.msgPer100!=null?' ('+a.msgPer100+'/100)':''):''}${a.vendu?' · '+a.vendu+' vente(s)':''}</div>`).join('')}</div>`:'';
+  el.innerHTML=`<div style="margin:10px 20px;padding:11px 14px;border:1px solid var(--bd);border-radius:var(--r);background:var(--sf2);font-size:12px">
+    <div style="font-weight:800">📊 Data publications — ${st.total} annonce(s) suivie(s) · ${st.mesurees} avec résultats <button class="btn gh" style="margin-left:8px" onclick="pubsExportCSV()">⬇ CSV</button></div>
+    <div style="color:var(--tx3);margin:4px 0 6px;line-height:1.5">Produits, zones et créneaux qui génèrent des messages. Lecture seule : le moteur n'est pas modifié sans GO.</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap">${tbl('Par produit',st.parType)}${tbl('Par zone',st.parZone)}${tbl('Par département',st.parDep)}${tbl('Par créneau',st.parSlot)}${tbl('Vignette BF',st.parBf)}</div>
+    <details style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">Importer des publications</summary>
+      <textarea id="pub-imp" class="fi" rows="4" placeholder="3271792774;2026-11-27;18h;matelas;140x200;199;Asnières-sur-Seine;92;1" style="width:100%;margin-top:6px;font-family:var(--m)"></textarea>
+      <button class="btn p" style="margin-top:6px" onclick="importPubs()">Enregistrer</button></details>
+    <details style="margin-top:6px"><summary style="cursor:pointer;font-weight:700">Importer des résultats (vues, favoris, messages, appels, vendu)</summary>
+      <textarea id="pub-res" class="fi" rows="4" placeholder="3271792774;12;1;2;0;0" style="width:100%;margin-top:6px;font-family:var(--m)"></textarea>
+      <button class="btn p" style="margin-top:6px" onclick="importPubResults()">Mettre à jour</button></details></div>`;
 }
 async function saveRenta(){
   const val={achat_ratio:Math.max(.05,Math.min(.9,(parseFloat(document.getElementById('pr-ratio').value)||35)/100)),livraison:Math.max(0,parseFloat(document.getElementById('pr-liv').value)||35)};
